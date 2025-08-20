@@ -130,6 +130,15 @@ const translations: Record<Language, Translations> = {
     receiptItemPlaceholder: 'ສິນຄ້າຕົວຢ່າງ',
     receiptTotalLabel: 'ຍອດລວມ',
 
+    // Exchange Rate Settings - NEW
+    exchangeRateSettings: 'ຕັ້ງຄ່າອັດຕາແລກປ່ຽນ',
+    baseCurrencyLabel: 'ຕັ້ງຄ່າອັດຕາແລກປ່ຽນ (1 LAK = ?)',
+    thbLabel: 'ເງິນບາດ (THB)',
+    usdLabel: 'ເງິນໂດລາ (USD)',
+    cnyLabel: 'ເງິນຢວນ (CNY)',
+    saveExchangeRatesButton: 'ບັນທຶກອັດຕາແລກປ່ຽນ',
+    exchangeRatesSavedSuccess: 'ບັນທຶກອັດຕາແລກປ່ຽນສຳເລັດ',
+    errorSavingExchangeRates: 'ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກອັດຕາແລກປ່ຽນ',
 
     // Dashboard
     todaySales: 'ຍອດຂາຍມື້ນີ້',
@@ -866,6 +875,16 @@ const translations: Record<Language, Translations> = {
     receiptSaleHeading: 'ใบเสร็จรับเงิน',
     receiptItemPlaceholder: 'สินค้าตัวอย่าง',
     receiptTotalLabel: 'ยอดรวม',
+
+    // Exchange Rate Settings - NEW
+    exchangeRateSettings: 'ตั้งค่าอัตราแลกเปลี่ยน',
+    baseCurrencyLabel: 'ตั้งค่าอัตราแลกเปลี่ยน (1 LAK = ?)',
+    thbLabel: 'เงินบาท (THB)',
+    usdLabel: 'ดอลลาร์สหรัฐ (USD)',
+    cnyLabel: 'หยวนจีน (CNY)',
+    saveExchangeRatesButton: 'บันทึกอัตราแลกเปลี่ยน',
+    exchangeRatesSavedSuccess: 'บันทึกอัตราแลกเปลี่ยนสำเร็จ',
+    errorSavingExchangeRates: 'เกิดข้อผิดพลาดในการบันทึกอัตราแลกเปลี่ยน',
 
     // Dashboard
     todaySales: 'ยอดขายวันนี้',
