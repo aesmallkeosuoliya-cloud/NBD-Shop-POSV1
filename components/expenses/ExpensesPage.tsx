@@ -9,6 +9,7 @@ import LoadingSpinner from '../common/LoadingSpinner';
 import { addExpense, getExpenses, updateExpense, deleteExpense, getSuppliers, isFirebaseInitialized } from '../../services/firebaseService';
 import Input from '../common/Input';
 import { UI_COLORS, EXPENSE_CATEGORIES } from '../../constants';
+import Card from '../common/Card';
 
 declare var Swal: any; // For SweetAlert2
 
@@ -32,6 +33,8 @@ const ExpensesPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterStartDate, setFilterStartDate] = useState('');
+  const [filterEndDate, setFilterEndDate] = useState('');
   const [formLoading, setFormLoading] = useState(false);
   const [allAvailableCategories, setAllAvailableCategories] = useState<string[]>(EXPENSE_CATEGORIES);
 
@@ -142,35 +145,69 @@ const ExpensesPage: React.FC = () => {
     }
   };
   
-  const filteredExpenses = useMemo(() => expenses.filter(e => 
-    e.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    e.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (e.supplierId && supplierMap[e.supplierId]?.toLowerCase().includes(searchTerm.toLowerCase()))
-  ), [expenses, searchTerm, supplierMap]);
+  const filteredExpenses = useMemo(() => {
+    return expenses.filter(e => {
+        const searchLower = searchTerm.toLowerCase();
+        const termMatch = searchTerm === '' ||
+            e.category.toLowerCase().includes(searchLower) ||
+            e.description.toLowerCase().includes(searchLower) ||
+            (e.supplierId && supplierMap[e.supplierId]?.toLowerCase().includes(searchLower));
+        
+        const startDateMatch = !filterStartDate || new Date(e.date) >= new Date(filterStartDate);
+        const endDateMatch = !filterEndDate || new Date(e.date) <= new Date(filterEndDate + 'T23:59:59.999Z');
+
+        return termMatch && startDateMatch && endDateMatch;
+    });
+  }, [expenses, searchTerm, supplierMap, filterStartDate, filterEndDate]);
+
 
   const formatDate = (isoDate: string) => {
     return new Date(isoDate).toLocaleDateString(t('language') === 'lo' ? 'lo-LA' : 'th-TH', {
         year: 'numeric', month: 'short', day: 'numeric'
     });
   }
+  
+  const clearFilters = () => {
+    setSearchTerm('');
+    setFilterStartDate('');
+    setFilterEndDate('');
+  };
 
   return (
     <div className="p-4 md:p-6">
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl font-semibold text-gray-700">{t('expenses')}</h1>
-        <div className="flex items-center gap-4 w-full sm:w-auto">
-             <Input 
-                placeholder={t('search') + '... (' + t('category') + ', ' + t('details') + ')'}
+        <Button onClick={handleAddExpense} variant="primary" leftIcon={<PlusIcon />} className="flex-shrink-0">
+          {t('addNewExpense')}
+        </Button>
+      </div>
+
+      <Card className="mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+            <Input
+                label={t('dateRangeStart')}
+                type="date"
+                value={filterStartDate}
+                onChange={e => setFilterStartDate(e.target.value)}
+                wrapperClassName="mb-0"
+            />
+            <Input
+                label={t('dateRangeEnd')}
+                type="date"
+                value={filterEndDate}
+                onChange={e => setFilterEndDate(e.target.value)}
+                wrapperClassName="mb-0"
+            />
+            <Input
+                label={t('search')}
+                placeholder={t('search') + '...'}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="max-w-xs"
-                wrapperClassName="mb-0 flex-grow"
+                wrapperClassName="mb-0"
             />
-            <Button onClick={handleAddExpense} variant="primary" leftIcon={<PlusIcon />} className="flex-shrink-0">
-            {t('addNewExpense')}
-            </Button>
+            <Button onClick={clearFilters} variant="outline" className="w-full h-10">{t('clearFilters')}</Button>
         </div>
-      </div>
+      </Card>
 
       {isLoading && !expenses.length ? ( 
         <div className="flex justify-center items-center h-64">
