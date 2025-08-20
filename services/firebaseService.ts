@@ -692,24 +692,21 @@ export const addPurchaseAndProcess = async (
     }, updates);
   }
   
-  // Only create expense if it's not a PO-related stock-in where expense might be handled differently or not at all.
-  // Or, if your business logic dictates an expense is always created, remove this condition.
-  // For now, assuming general purchases (not from PO) create an expense.
-  if (!relatedPoId) {
-    const expenseDescription = expenseDescriptionTemplate.replace('{purchaseId}', purchaseInput.purchaseOrderNumber || purchaseId.substring(purchaseId.length - 6));
-    const expenseData: Omit<Expense, 'id' | 'createdAt'> = {
-      date: purchaseInput.purchaseDate, 
-      category: expenseCategoryText,
-      amount: calculatedTotalAmount, 
-      description: expenseDescription,
-      supplierId: purchaseInput.supplierId,
-      relatedPurchaseId: purchaseId, // Link expense to this stock-in document
-    };
-    const newExpenseRef = getRef('expenses').push();
-    const expenseId = newExpenseRef.key;
-    if (!expenseId) throw new Error("Failed to generate expense ID for purchase");
-    updates[`expenses/${expenseId}`] = { ...cleanUndefinedProps(expenseData), id: expenseId, createdAt: purchaseTimestamp }; 
-  }
+  // Create an expense for this purchase/stock-in, regardless of whether it's from a PO or not.
+  // This records the cost of goods as an expense at the time of receiving them.
+  const expenseDescription = expenseDescriptionTemplate.replace('{purchaseId}', purchaseInput.purchaseOrderNumber || purchaseId.substring(purchaseId.length - 6));
+  const expenseData: Omit<Expense, 'id' | 'createdAt'> = {
+    date: purchaseInput.purchaseDate, 
+    category: expenseCategoryText,
+    amount: calculatedTotalAmount, 
+    description: expenseDescription,
+    supplierId: purchaseInput.supplierId,
+    relatedPurchaseId: purchaseId, // Link expense to this stock-in document
+  };
+  const newExpenseRef = getRef('expenses').push();
+  const expenseId = newExpenseRef.key;
+  if (!expenseId) throw new Error("Failed to generate expense ID for purchase");
+  updates[`expenses/${expenseId}`] = { ...cleanUndefinedProps(expenseData), id: expenseId, createdAt: purchaseTimestamp };
 
   // If related to a PO, update the PO status and item received quantities
   if (relatedPoId) {
