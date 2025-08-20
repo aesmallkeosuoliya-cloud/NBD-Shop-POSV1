@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useMemo, ChangeEvent } from 'r
 import { createRoot } from 'react-dom/client';
 import { Product, CartItem, Sale, SaleTransactionItem, Customer, StoreSettings, Language, Promotion } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { getProducts, addSale, isFirebaseInitialized, getCustomers, addCustomer, getStoreSettings, getActivePromotions } from '../../services/firebaseService';
+import { getProducts, addSale, isFirebaseInitialized, getCustomers, addCustomer, getStoreSettings, getActivePromotions, getExchangeRates } from '../../services/firebaseService';
 import Input from '../common/Input';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
@@ -68,7 +68,7 @@ export const POSPage: React.FC = () => {
   const resetSaleState = () => {
     setCart([]);
     setSelectedCustomerId('');
-    setEditableVatRate(7);
+    // Do not reset VAT rate here, it's a setting. It will be refetched if needed.
     setModalDiscount('');
     setModalPaymentMethod('cash');
     setModalReceivedAmount('');
@@ -79,16 +79,20 @@ export const POSPage: React.FC = () => {
     if (!isFirebaseInitialized()) return;
     setIsLoading(true);
     try {
-      const [fetchedProducts, fetchedCustomers, fetchedStoreSettings, fetchedActivePromotions] = await Promise.all([ 
+      const [fetchedProducts, fetchedCustomers, fetchedStoreSettings, fetchedActivePromotions, fetchedExchangeRates] = await Promise.all([ 
         getProducts(), 
         getCustomers(),
         getStoreSettings(),
-        getActivePromotions()
+        getActivePromotions(),
+        getExchangeRates()
       ]);
       setAllProductsDB(fetchedProducts);
       setCustomers(fetchedCustomers.sort((a,b) => a.name.localeCompare(b.name)));
       setStoreSettings(fetchedStoreSettings || DEFAULT_STORE_SETTINGS);
       setActivePromotions(fetchedActivePromotions);
+      if (fetchedExchangeRates && fetchedExchangeRates.vatRate !== undefined) {
+        setEditableVatRate(fetchedExchangeRates.vatRate);
+      }
     } catch (error) {
       console.error("Error fetching POS data:", error);
     } finally {

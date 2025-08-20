@@ -2,6 +2,8 @@
 
 
 
+
+
 export enum Language {
   LO = 'lo',
   TH = 'th',
@@ -347,5 +349,6 @@ export interface ExchangeRates {
   thb: number;
   usd: number;
   cny: number;
+  vatRate?: number;
   updatedAt?: string;
 }

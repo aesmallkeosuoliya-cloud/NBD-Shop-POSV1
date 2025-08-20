@@ -11,7 +11,7 @@ declare var Swal: any;
 
 const ExchangeRatePage: React.FC = () => {
   const { t } = useLanguage();
-  const [rates, setRates] = useState<Omit<ExchangeRates, 'updatedAt'>>({ thb: 0, usd: 0, cny: 0 });
+  const [rates, setRates] = useState<Partial<Omit<ExchangeRates, 'updatedAt'>>>({ thb: 0, usd: 0, cny: 0, vatRate: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -25,6 +25,7 @@ const ExchangeRatePage: React.FC = () => {
             thb: fetchedRates.thb || 0,
             usd: fetchedRates.usd || 0,
             cny: fetchedRates.cny || 0,
+            vatRate: fetchedRates.vatRate ?? 0,
           });
         }
       } catch (error) {
@@ -38,7 +39,6 @@ const ExchangeRatePage: React.FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    // Allow scientific notation but handle parsing correctly
     setRates(prev => ({ ...prev, [name]: value === '' ? '' : value }));
   };
   
@@ -49,6 +49,7 @@ const ExchangeRatePage: React.FC = () => {
         thb: parseFloat(String(rates.thb)) || 0,
         usd: parseFloat(String(rates.usd)) || 0,
         cny: parseFloat(String(rates.cny)) || 0,
+        vatRate: parseFloat(String(rates.vatRate)) || 0,
       };
       await saveExchangeRates(ratesToSave);
       Swal.fire({
@@ -75,8 +76,18 @@ const ExchangeRatePage: React.FC = () => {
 
   return (
     <div className="p-4 md:p-6 flex justify-center items-start">
-      <Card title={t('baseCurrencyLabel')} className="w-full max-w-lg">
+      <Card title={t('exchangeRateSettings')} className="w-full max-w-lg">
         <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-4">
+          <Input
+            label={t('vatRateLabel')}
+            name="vatRate"
+            type="number"
+            step="0.01"
+            value={rates.vatRate ?? 0}
+            onChange={handleChange}
+          />
+          <hr/>
+          <p className="text-sm font-semibold pt-2">{t('baseCurrencyLabel')}</p>
           <Input
             label={t('thbLabel')}
             name="thb"
