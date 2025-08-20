@@ -80,10 +80,10 @@ const SalesHistoryPage: React.FC = () => {
   useEffect(() => {
     let salesResult = allSales;
     if (filterDate) {
-      salesResult = salesResult.filter(sale => sale.transactionDate.startsWith(filterDate));
+      salesResult = salesResult.filter(sale => sale.transactionDate && sale.transactionDate.startsWith(filterDate));
     }
     if (filterReceiptNo) {
-      salesResult = salesResult.filter(sale => sale.receiptNumber.toLowerCase().includes(filterReceiptNo.toLowerCase()));
+      salesResult = salesResult.filter(sale => sale.receiptNumber && sale.receiptNumber.toLowerCase().includes(filterReceiptNo.toLowerCase()));
     }
     if (filterCustomerName) {
       salesResult = salesResult.filter(sale => sale.customerName?.toLowerCase().includes(filterCustomerName.toLowerCase()));
