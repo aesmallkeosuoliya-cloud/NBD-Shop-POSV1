@@ -2,7 +2,7 @@
 // In a typical bundled React app, you'd import from 'firebase/app' and 'firebase/database'.
 
 import { FIREBASE_CONFIG, EXPENSE_CATEGORIES, UI_COLORS, VAT_RATE } from '../constants'; 
-import { Product, Sale, Purchase, Expense, Supplier, DashboardData, SaleTransactionItem, ProductMovementLogType, ProductMovementLog, FirebaseUser, Customer, SalePayment, StoreSettings, PurchaseOrder, PurchaseOrderItem, Promotion } from '../types'; 
+import { Product, Sale, Purchase, Expense, Supplier, DashboardData, SaleTransactionItem, ProductMovementLogType, ProductMovementLog, FirebaseUser, Customer, SalePayment, StoreSettings, PurchaseOrder, PurchaseOrderItem, Promotion, ExchangeRates } from '../types'; 
 
 
 // Declare Firebase types if not automatically available from global scope.
@@ -1098,6 +1098,23 @@ export const getDashboardSummary = async (): Promise<DashboardData> => {
         monthlySalesChart,
         expenseBreakdownChart,
     } as DashboardData; 
+};
+
+// --- Exchange Rate Service ---
+export const getExchangeRates = async (): Promise<ExchangeRates | null> => {
+  const snapshot = await getRef('appSettings/exchangeRates').get();
+  if (snapshot.exists()) {
+    return snapshot.val() as ExchangeRates;
+  }
+  return null;
+};
+
+export const saveExchangeRates = async (rates: Omit<ExchangeRates, 'updatedAt'>): Promise<void> => {
+  const dataToSave = {
+    ...rates,
+    updatedAt: new Date().toISOString(),
+  };
+  await getRef('appSettings/exchangeRates').set(dataToSave);
 };
 
 

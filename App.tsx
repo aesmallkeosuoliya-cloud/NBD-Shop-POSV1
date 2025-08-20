@@ -4,6 +4,8 @@
 
 
 
+
+
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, useLocation, Navigate, Outlet } from 'react-router-dom';
 import Sidebar from './components/layout/Sidebar';
@@ -24,6 +26,7 @@ import SalesHistoryPage from './components/salesHistory/SalesHistoryPage';
 import { CreditTrackingPage } from './components/creditTracking/CreditTrackingPage'; // New Page
 import CustomersPage from './components/customers/CustomersPage'; // New Customer Management Page
 import StoreSettingsPage from './components/settings/StoreSettingsPage'; // New Store Settings Page
+import ExchangeRatePage from './components/settings/ExchangeRatePage'; // NEW Exchange Rate Page
 import ProfitLossPage from './components/reports/ProfitLossPage'; // New Profit & Loss Page
 import StockMovementReportPage from './components/reports/StockMovementReportPage'; // New Stock Movement Report Page
 import PromotionsPage from './components/promotions/PromotionsPage'; // New Promotion Page
@@ -85,6 +88,7 @@ const MainLayout: React.FC = () => {
     if (pathname.startsWith('/settings/store')) return 'storeSettingsPageTitle'; 
     if (pathname.startsWith('/reports/profit-loss')) return 'profitLossSummaryPageTitle';
     if (pathname.startsWith('/reports/stock-movement')) return 'stockMovementReportPageTitle';
+    if (pathname.startsWith('/settings/exchange-rate')) return 'exchangeRateSettings';
     return 'appName'; 
   };
   
@@ -169,6 +173,7 @@ const App: React.FC = () => {
           <Route path="/sales-history" element={<PageWrapper titleKey="salesHistory"><SalesHistoryPage /></PageWrapper>} />
           <Route path="/credit-tracking" element={<PageWrapper titleKey="creditTrackingPageTitle"><CreditTrackingPage /></PageWrapper>} />
           <Route path="/settings/store" element={<PageWrapper titleKey="storeSettingsPageTitle"><StoreSettingsPage /></PageWrapper>} />
+          <Route path="/settings/exchange-rate" element={<PageWrapper titleKey="exchangeRateSettings"><ExchangeRatePage /></PageWrapper>} />
           <Route path="/reports/profit-loss" element={<PageWrapper titleKey="profitLossSummaryPageTitle"><ProfitLossPage /></PageWrapper>} /> {/* New Route */}
           <Route path="/reports/stock-movement" element={<PageWrapper titleKey="stockMovementReportPageTitle"><StockMovementReportPage /></PageWrapper>} /> {/* New Route */}
           <Route path="*" element={<Navigate to="/" replace />} />

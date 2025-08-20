@@ -1,5 +1,7 @@
 
 
+
+
 export enum Language {
   LO = 'lo',
   TH = 'th',
@@ -339,4 +341,11 @@ export interface Promotion {
   status: PromotionStatus;
   createdAt: string; // ISO Date string
   updatedAt: string; // ISO Date string
+}
+
+export interface ExchangeRates {
+  thb: number;
+  usd: number;
+  cny: number;
+  updatedAt?: string;
 }
