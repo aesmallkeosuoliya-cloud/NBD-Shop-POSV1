@@ -1,9 +1,4 @@
 
-
-
-
-
-
 export enum Language {
   LO = 'lo',
   TH = 'th',
@@ -180,9 +175,9 @@ export interface PurchaseItemDetail { // This is for Stock-In page
   productName: string;
   productCategory: string;
   quantity: number; // Quantity received in this stock-in
-  buyPrice: number; // Actual buy price for this stock-in
-  hiddenCost: number;
-  totalCostPricePerUnit: number;
+  buyPrice: number; // Actual buy price for this stock-in (in specified currency)
+  hiddenCost: number; // Hidden cost in base currency (LAK)
+  totalCostPricePerUnit: number; // Total cost in base currency (LAK)
   gpPercentApplied?: number;
   calculatedSellingPrice: number;
   relatedPoId?: string; // If this stock-in item is from a PO
@@ -198,11 +193,20 @@ export interface Purchase { // This is a Stock-In document
   purchaseOrderNumber?: string; // Can be the PO number if related
   relatedPoId?: string; // Link to the PurchaseOrder ID
   items: PurchaseItemDetail[];
-  totalAmount: number; // Total value of this stock-in
+
+  currency: 'LAK' | 'THB' | 'USD';
+  exchangeRate: number;
+  taxType: 'exempt' | 'calculate';
+  taxRate: number; // e.g. 7 for 7%
+  taxAmount: number;
+  subtotal: number; // total before tax, in base currency (LAK)
+  totalAmount: number; // grand total (subtotal + taxAmount), in base currency (LAK)
+  
   notes?: string;
   createdAt: string; // ISO Date string
   updatedAt: string; // ISO Date string
 }
+
 
 export type PurchaseOrderStatus = 'pending' | 'partial' | 'received';
 

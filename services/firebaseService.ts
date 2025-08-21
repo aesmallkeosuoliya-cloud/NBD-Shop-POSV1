@@ -635,26 +635,18 @@ export const getSalePayments = async (saleId: string): Promise<SalePayment[]> =>
 
 // --- Purchase (Stock-In) Service ---
 export const addPurchaseAndProcess = async (
-  purchaseInput: Omit<Purchase, 'id' | 'createdAt' | 'updatedAt' | 'totalAmount'>,
+  purchaseInput: Omit<Purchase, 'id' | 'createdAt' | 'updatedAt'>,
   expenseCategoryText: string, 
-  expenseDescriptionTemplate: string,
-  relatedPoId?: string // New: PO ID if this stock-in is from a PO
+  expenseDescriptionTemplate: string
 ): Promise<string> => {
   const newPurchaseRef = getRef('purchases').push(); // This is a Stock-In document
   const purchaseId = newPurchaseRef.key;
   if (!purchaseId) throw new Error("Failed to generate purchase (stock-in) ID");
 
-  let calculatedTotalAmount = 0;
-  purchaseInput.items.forEach(item => {
-    calculatedTotalAmount += item.totalCostPricePerUnit * item.quantity;
-  });
-
   const purchaseTimestamp = new Date(purchaseInput.purchaseDate).toISOString();
   const purchaseData: Purchase = {
     ...purchaseInput,
     id: purchaseId,
-    relatedPoId: relatedPoId, // Store PO ID if present
-    totalAmount: calculatedTotalAmount,
     createdAt: purchaseTimestamp, 
     updatedAt: purchaseTimestamp,
   };
@@ -679,7 +671,7 @@ export const addPurchaseAndProcess = async (
     updates[`${productRefPath}/updatedAt`] = purchaseTimestamp; 
 
     await addProductMovementLogEntry(item.productId, {
-        type: relatedPoId ? ProductMovementLogType.STOCK_IN_FROM_PO : ProductMovementLogType.PURCHASE,
+        type: purchaseInput.relatedPoId ? ProductMovementLogType.STOCK_IN_FROM_PO : ProductMovementLogType.PURCHASE,
         quantityChange: item.quantity,
         stockBefore: stockBefore,
         stockAfter: newStock,
@@ -688,17 +680,16 @@ export const addPurchaseAndProcess = async (
         sellingPriceBefore: currentProduct.sellingPrice,
         sellingPriceAfter: item.calculatedSellingPrice,
         relatedDocumentId: purchaseId, // Link to this stock-in document
-        notes: `Stock-in via ${purchaseInput.purchaseOrderNumber ? 'Ref ' + purchaseInput.purchaseOrderNumber : 'ID ' + purchaseId.substring(purchaseId.length-6)}${relatedPoId ? ` (PO: ${relatedPoId.substring(relatedPoId.length-6)})` : ''}`, 
+        notes: `Stock-in via ${purchaseInput.purchaseOrderNumber ? 'Ref ' + purchaseInput.purchaseOrderNumber : 'ID ' + purchaseId.substring(purchaseId.length-6)}${purchaseInput.relatedPoId ? ` (PO: ${purchaseInput.relatedPoId.substring(purchaseInput.relatedPoId.length-6)})` : ''}`, 
     }, updates);
   }
   
-  // Create an expense for this purchase/stock-in, regardless of whether it's from a PO or not.
-  // This records the cost of goods as an expense at the time of receiving them.
+  // Create an expense for this purchase/stock-in, based on the subtotal (cost of goods).
   const expenseDescription = expenseDescriptionTemplate.replace('{purchaseId}', purchaseInput.purchaseOrderNumber || purchaseId.substring(purchaseId.length - 6));
   const expenseData: Omit<Expense, 'id' | 'createdAt'> = {
     date: purchaseInput.purchaseDate, 
     category: expenseCategoryText,
-    amount: calculatedTotalAmount, 
+    amount: purchaseInput.subtotal, 
     description: expenseDescription,
     supplierId: purchaseInput.supplierId,
     relatedPurchaseId: purchaseId, // Link expense to this stock-in document
@@ -709,10 +700,10 @@ export const addPurchaseAndProcess = async (
   updates[`expenses/${expenseId}`] = { ...cleanUndefinedProps(expenseData), id: expenseId, createdAt: purchaseTimestamp };
 
   // If related to a PO, update the PO status and item received quantities
-  if (relatedPoId) {
-    const poSnapshot = await getRef(`purchaseOrders/${relatedPoId}`).get();
+  if (purchaseInput.relatedPoId) {
+    const poSnapshot = await getRef(`purchaseOrders/${purchaseInput.relatedPoId}`).get();
     if (poSnapshot.exists()) {
-      const poToUpdate: PurchaseOrder = { id: relatedPoId, ...poSnapshot.val() };
+      const poToUpdate: PurchaseOrder = { id: purchaseInput.relatedPoId, ...poSnapshot.val() };
       let allItemsFullyReceived = true;
       let anyItemPartiallyReceived = false;
 
@@ -737,11 +728,10 @@ export const addPurchaseAndProcess = async (
       } else if (anyItemPartiallyReceived) {
         poToUpdate.status = 'partial';
       }
-      // else status remains 'pending' or as it was if no items related to PO were in this stock-in
       
-      updates[`purchaseOrders/${relatedPoId}/items`] = poToUpdate.items;
-      updates[`purchaseOrders/${relatedPoId}/status`] = poToUpdate.status;
-      updates[`purchaseOrders/${relatedPoId}/updatedAt`] = purchaseTimestamp;
+      updates[`purchaseOrders/${purchaseInput.relatedPoId}/items`] = poToUpdate.items;
+      updates[`purchaseOrders/${purchaseInput.relatedPoId}/status`] = poToUpdate.status;
+      updates[`purchaseOrders/${purchaseInput.relatedPoId}/updatedAt`] = purchaseTimestamp;
     }
   }
 

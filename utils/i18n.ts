@@ -16,6 +16,9 @@ const translations: Record<Language, Translations> = {
     success: 'ສຳເລັດ',
     error: 'ຂໍ້ຜິດພາດ',
     total: 'ລວມ',
+    subtotal: 'ຍອດລວມກ່ອນພາສີ',
+    taxAmount: 'ຈຳນວນພາສີ',
+    grandTotal: 'ຍອດລວມສຸດທິ',
     notes: 'ໝາຍເຫດ',
     date: 'ວັນທີ',
     category: 'ໝວດໝູ່',
@@ -481,7 +484,6 @@ const translations: Record<Language, Translations> = {
     price: 'ລາຄາ',
     subTotal: 'ຍອດລວມ (ກ່ອນ VAT)',
     vat: 'ອາກອນມູນຄ່າເພີ່ມ',
-    grandTotal: 'ຍອດສຸດທິ',
     paymentMethod: 'ວິທີການຊຳລະເງິນ',
     paymentCash: 'ເງິນສົດ',
     paymentTransfer: 'ໂອນເງິນ',
@@ -510,6 +512,11 @@ const translations: Record<Language, Translations> = {
     printPopupBlocker: 'ບໍ່ສາມາດເປີດປ່ອງຢ້ຽມການພິມໄດ້. ກະລຸນາກວດສອບການຕັ້ງຄ່າ Pop-up Blocker ຂອງບຣາວເຊີ.',
     
     // Purchases (Stock-In)
+    currency: 'ເງິນຕາ',
+    exchangeRate: 'ອັດຕາແລກປ່ຽນ',
+    tax: 'ພາສີ',
+    taxExempt: 'ຍົກເວັ້ນພາສີ',
+    calculateTax: 'ຄິດພາສີ',
     addNewPurchase: 'ເພີ່ມລາຍການຮັບສິນຄ້າໃໝ່', // Changed
     editPurchase: 'ແກ້ໄຂລາຍການຮັບສິນຄ້າ', // Changed
     supplier: 'ຜູ້ສະໜອງ',
@@ -765,6 +772,9 @@ const translations: Record<Language, Translations> = {
     success: 'สำเร็จ',
     error: 'ข้อผิดพลาด',
     total: 'รวม',
+    subtotal: 'ยอดรวมก่อนภาษี',
+    taxAmount: 'จำนวนภาษี',
+    grandTotal: 'ยอดรวมสุทธิ',
     notes: 'หมายเหตุ',
     date: 'วันที่',
     category: 'หมวดหมู่',
@@ -1228,7 +1238,6 @@ const translations: Record<Language, Translations> = {
     price: 'ราคา',
     subTotal: 'ยอดรวม (ก่อน VAT)',
     vat: 'ภาษีมูลค่าเพิ่ม',
-    grandTotal: 'ยอดสุทธิ',
     paymentMethod: 'วิธีการชำระเงิน',
     paymentCash: 'เงินสด',
     paymentTransfer: 'โอนเงิน',
@@ -1257,6 +1266,11 @@ const translations: Record<Language, Translations> = {
     printPopupBlocker: 'ไม่สามารถเปิดหน้าต่างการพิมพ์ได้ โปรดตรวจสอบการตั้งค่า Pop-up Blocker ของเบราว์เซอร์',
 
     // Purchases (Stock-In)
+    currency: 'สกุลเงิน',
+    exchangeRate: 'อัตราแลกเปลี่ยน',
+    tax: 'ภาษี',
+    taxExempt: 'ยกเว้นภาษี',
+    calculateTax: 'คิดภาษี',
     addNewPurchase: 'เพิ่มรายการรับสินค้าใหม่',
     editPurchase: 'แก้ไขรายการรับสินค้า',
     supplier: 'ซัพพลายเออร์',
