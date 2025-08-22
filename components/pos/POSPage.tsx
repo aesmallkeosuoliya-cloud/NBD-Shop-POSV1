@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect, useCallback, useMemo, ChangeEvent } from 'react';
-import { createRoot } from 'react-dom/client';
+import React, { useState, useEffect, useCallback, useMemo, ChangeEvent, useRef } from 'react';
+import { createRoot, Root } from 'react-dom/client';
 import { Product, CartItem, Sale, SaleTransactionItem, Customer, StoreSettings, Language, Promotion } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getProducts, addSale, isFirebaseInitialized, getCustomers, addCustomer, getStoreSettings, getActivePromotions, getExchangeRates } from '../../services/firebaseService';
@@ -22,11 +22,89 @@ declare var Swal: any;
 const NOTO_SANS_LAO_REGULAR_TTF_BASE64_PLACEHOLDER = "PLACEHOLDER_LAO_FONT_BASE64_DATA_MUST_BE_REPLACED";
 const NOTO_SANS_THAI_REGULAR_TTF_BASE64_PLACEHOLDER = "PLACEHOLDER_THAI_FONT_BASE64_DATA_MUST_BE_REPLACED";
 
+// --- ICONS ---
 const PlusIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>;
 const MinusIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 12H6" /></svg>;
 const TrashIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>;
 const UserPlusIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>;
 const PromotionIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7a1 1 0 011.414-1.414L10 14.586l6.293-6.293a1 1 0 011.414 0z" clipRule="evenodd" /><path fillRule="evenodd" d="M10 2a1 1 0 011 1v12a1 1 0 11-2 0V3a1 1 0 011-1z" clipRule="evenodd" /></svg>;
+
+// --- RECEIPT COMPONENT & TYPES ---
+interface ReceiptData {
+    receiptNumber: string;
+    transactionDate: string;
+    customerName: string;
+    items: { productName: string; quantity: number; unitPrice: number; totalPrice: number }[];
+    subtotal: number;
+    discount: number;
+    vat: number;
+    vatRate: number;
+    grandTotal: number;
+    notes?: string;
+    footerNote: string;
+    changeGiven?: number;
+    receivedAmount?: number;
+    paymentMethod: string;
+}
+  
+const PrintableReceipt: React.FC<{
+    data: ReceiptData;
+    settings: StoreSettings;
+    t: (key: string, replacements?: Record<string, string>) => string;
+    formatCurrency: (value: number) => string;
+}> = ({ data, settings, t, formatCurrency }) => {
+    return (
+      <div style={{ width: '288px', fontFamily: "'Phetsarath OT', 'Noto Sans Lao', sans-serif", fontSize: '12px', color: 'black', margin: '0 auto', padding: '10px', background: 'white' }}>
+        <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+          {settings.logoUrl && <img src={settings.logoUrl} alt="Logo" style={{ maxWidth: '80px', maxHeight: '40px', margin: '0 auto 5px' }} />}
+          <h2 style={{ fontWeight: 'bold', fontSize: '16px', margin: 0 }}>{settings.storeName}</h2>
+          <p style={{ margin: 0 }}>{settings.address}</p>
+          <p style={{ margin: 0 }}>{t('receiptHeaderPhone')}: {settings.phone}</p>
+          {settings.taxId && <p style={{ margin: 0 }}>{t('receiptHeaderTaxId')}: {settings.taxId}</p>}
+        </div>
+        <div style={{ borderTop: '1px dashed black', borderBottom: '1px dashed black', padding: '5px 0', fontSize: '11px' }}>
+          <p style={{ margin: '1px 0' }}>{t('receiptNumber')}: {data.receiptNumber}</p>
+          <p style={{ margin: '1px 0' }}>{t('date')}: {new Date(data.transactionDate).toLocaleString()}</p>
+          <p style={{ margin: '1px 0' }}>{t('customerName')}: {data.customerName}</p>
+        </div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', margin: '10px 0' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid black' }}>
+              <th style={{ textAlign: 'left', padding: '2px', fontSize: '11px' }}>{t('productName')}</th>
+              <th style={{ textAlign: 'right', padding: '2px', fontSize: '11px' }}>{t('total')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.items.map((item, index) => (
+              <tr key={index}>
+                <td style={{ padding: '2px' }}>
+                  {item.productName}<br/>
+                  <span style={{ fontSize: '10px' }}>&nbsp;&nbsp;{item.quantity} x {formatCurrency(item.unitPrice)}</span>
+                </td>
+                <td style={{ textAlign: 'right', padding: '2px', verticalAlign: 'top' }}>{formatCurrency(item.totalPrice)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div style={{ borderTop: '1px dashed black', paddingTop: '5px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{t('summarySubtotal')}:</span><span>{formatCurrency(data.subtotal)}</span></div>
+          {data.discount > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{t('modalDiscount')}:</span><span>-{formatCurrency(data.discount)}</span></div>}
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{t('summaryVatWithPercent', { percent: data.vatRate.toString()})}:</span><span>{formatCurrency(data.vat)}</span></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '16px', marginTop: '5px' }}><span>{t('grandTotal')}:</span><span>{formatCurrency(data.grandTotal)}</span></div>
+        </div>
+         {data.paymentMethod === 'cash' && data.receivedAmount !== undefined && (
+          <div style={{ borderTop: '1px dashed black', marginTop: '5px', paddingTop: '5px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{t('receivedAmount')}:</span><span>{formatCurrency(data.receivedAmount)}</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{t('changeDue')}:</span><span>{formatCurrency(data.changeGiven ?? 0)}</span></div>
+          </div>
+        )}
+        {data.notes && <p style={{ marginTop: '10px', fontSize: '10px', borderTop: '1px dashed black', paddingTop: '5px' }}>{t('notes')}: {data.notes}</p>}
+        <div style={{ textAlign: 'center', marginTop: '15px', borderTop: '1px dashed black', paddingTop: '5px' }}>
+          <p style={{ margin: 0 }}>{data.footerNote}</p>
+        </div>
+      </div>
+    );
+};
 
 
 export const POSPage: React.FC = () => {
@@ -43,6 +121,7 @@ export const POSPage: React.FC = () => {
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isProductSelectionModalOpen, setIsProductSelectionModalOpen] = useState(false);
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [selectedCartItemForPriceChange, setSelectedCartItemForPriceChange] = useState<CartItem | null>(null);
 
   const [isProcessingSale, setIsProcessingSale] = useState(false);
@@ -56,6 +135,8 @@ export const POSPage: React.FC = () => {
   const [modalPaymentMethod, setModalPaymentMethod] = useState<'cash' | 'transfer' | 'credit'>('cash');
   const [modalReceivedAmount, setModalReceivedAmount] = useState<number | ''>('');
   const [modalNotes, setModalNotes] = useState('');
+
+  const receiptPrintAreaRootRef = useRef<Root | null>(null);
   
   const currencySymbol = language === Language.LO ? '₭' : '฿';
   const localeForFormatting = language === Language.LO ? 'lo-LA' : 'th-TH';
@@ -68,7 +149,6 @@ export const POSPage: React.FC = () => {
   const resetSaleState = () => {
     setCart([]);
     setSelectedCustomerId('');
-    // Do not reset VAT rate here, it's a setting. It will be refetched if needed.
     setModalDiscount('');
     setModalPaymentMethod('cash');
     setModalReceivedAmount('');
@@ -121,6 +201,33 @@ export const POSPage: React.FC = () => {
     return { total, discount, taxAmount, grandTotal, change };
   }, [cartSubtotal, modalDiscount, editableVatRate, modalReceivedAmount, modalPaymentMethod]);
 
+  const previewData = useMemo((): ReceiptData => {
+    const subtotal = cart.reduce((acc, item) => acc + item.activeUnitPrice * item.quantityInCart, 0);
+    const discount = 0; // Preview doesn't include checkout modal discount
+    const subtotalAfterDiscount = subtotal - discount;
+    const vat = subtotalAfterDiscount * (editableVatRate / 100);
+    const grandTotal = subtotalAfterDiscount + vat;
+
+    return {
+        receiptNumber: 'PREVIEW-12345',
+        transactionDate: new Date().toISOString(),
+        customerName: selectedCustomerDetails?.name || t('walkInCustomer'),
+        items: cart.map(item => ({
+            productName: item.name,
+            quantity: item.quantityInCart,
+            unitPrice: item.activeUnitPrice,
+            totalPrice: item.activeUnitPrice * item.quantityInCart,
+        })),
+        subtotal: subtotal,
+        discount: discount,
+        vat: vat,
+        vatRate: editableVatRate,
+        grandTotal: grandTotal,
+        notes: '',
+        footerNote: storeSettings.footerNote,
+        paymentMethod: modalPaymentMethod,
+    };
+  }, [cart, editableVatRate, selectedCustomerDetails, t, storeSettings, modalPaymentMethod]);
 
   const addToCart = useCallback((product: Product) => {
     setCart(prevCart => {
@@ -176,12 +283,12 @@ export const POSPage: React.FC = () => {
         const itemToUpdate = prevCart.find(item => item.id === productId);
         if (!itemToUpdate) return prevCart;
 
-        if (value === '') { // Allow empty input while typing
-            return prevCart.map(item => item.id === productId ? { ...item, quantityInCart: 0 } : item); // Use 0 as a temporary value
+        if (value === '') {
+            return prevCart.map(item => item.id === productId ? { ...item, quantityInCart: 0 } : item);
         }
 
-        if (isNaN(newQuantity) || newQuantity < 0) { // Invalid number or negative
-            return prevCart; // Do nothing
+        if (isNaN(newQuantity) || newQuantity < 0) {
+            return prevCart;
         }
 
         if (newQuantity > itemToUpdate.stock) {
@@ -199,7 +306,7 @@ export const POSPage: React.FC = () => {
         if (!itemToUpdate) return prevCart;
 
         if (itemToUpdate.quantityInCart <= 0) {
-            return prevCart.filter(item => item.id !== productId); // Remove item if quantity is 0 or less
+            return prevCart.filter(item => item.id !== productId);
         }
         return prevCart;
     });
@@ -249,6 +356,14 @@ export const POSPage: React.FC = () => {
       }
       setIsCheckoutModalOpen(true);
   };
+  
+  const handleOpenPreview = () => {
+    if (cart.length === 0) {
+      Swal.fire(t('cartIsEmpty'), '', 'warning');
+      return;
+    }
+    setIsPreviewModalOpen(true);
+  };
 
   const handleApplyPromotions = () => {
     if (activePromotions.length === 0 || cart.length === 0) return;
@@ -256,7 +371,7 @@ export const POSPage: React.FC = () => {
     let promotionsApplied = false;
     const newCart = cart.map(cartItem => {
         if (cartItem.appliedPromotionId) {
-            return cartItem; // Promotion already applied, skip
+            return cartItem;
         }
 
         const applicablePromotion = activePromotions.find(promo => promo.productIds.includes(cartItem.id));
@@ -268,13 +383,12 @@ export const POSPage: React.FC = () => {
 
             if (applicablePromotion.discountType === 'percent') {
                 newPrice = originalPrice * (1 - applicablePromotion.discountValue / 100);
-            } else { // 'fixed'
+            } else {
                 newPrice = originalPrice - applicablePromotion.discountValue;
             }
 
-            newPrice = Math.max(0, newPrice); // Don't let price be negative
+            newPrice = Math.max(0, newPrice);
 
-            // Only apply if the new price is better than the current active price
             if (newPrice < cartItem.activeUnitPrice) {
                 return {
                     ...cartItem,
@@ -303,6 +417,55 @@ export const POSPage: React.FC = () => {
         });
     }
   };
+
+  const handlePrintReceipt = useCallback((saleToPrint: Sale) => {
+    const printAreaContainer = document.getElementById('receipt-print-area-wrapper');
+    if (!printAreaContainer) {
+        console.error("Receipt print area not found");
+        return;
+    }
+
+    if (!receiptPrintAreaRootRef.current) {
+        receiptPrintAreaRootRef.current = createRoot(printAreaContainer);
+    }
+    
+    const receiptData: ReceiptData = {
+        receiptNumber: saleToPrint.receiptNumber,
+        transactionDate: saleToPrint.transactionDate,
+        customerName: saleToPrint.customerName,
+        items: saleToPrint.items.map(i => ({ productName: i.productName, quantity: i.quantity, unitPrice: i.unitPriceAfterItemDiscount, totalPrice: i.totalPrice })),
+        subtotal: saleToPrint.subtotalAfterItemDiscounts,
+        discount: saleToPrint.overallSaleDiscountAmountCalculated,
+        vat: saleToPrint.vatAmountFromEditableRate,
+        vatRate: editableVatRate,
+        grandTotal: saleToPrint.grandTotal,
+        notes: saleToPrint.notes,
+        footerNote: storeSettings.footerNote,
+        changeGiven: saleToPrint.changeGiven,
+        receivedAmount: saleToPrint.receivedAmount,
+        paymentMethod: saleToPrint.paymentMethod
+    };
+    
+    receiptPrintAreaRootRef.current.render(
+        <PrintableReceipt
+            data={receiptData}
+            settings={storeSettings}
+            t={t}
+            formatCurrency={formatCurrency}
+        />
+    );
+
+    setTimeout(() => {
+        document.body.classList.add('printing-receipt');
+        const cleanup = () => {
+            document.body.classList.remove('printing-receipt');
+            window.removeEventListener('afterprint', cleanup);
+            receiptPrintAreaRootRef.current?.render(null);
+        };
+        window.addEventListener('afterprint', cleanup);
+        window.print();
+    }, 500);
+  }, [storeSettings, t, formatCurrency, editableVatRate]);
   
   const handleProcessSale = async () => {
     setIsProcessingSale(true);
@@ -323,7 +486,7 @@ export const POSPage: React.FC = () => {
         itemDiscountValue: item.appliedPromotionId ? 0 : item.itemDiscountValue,
         unitPriceAfterItemDiscount: item.activeUnitPrice,
         totalPrice: item.activeUnitPrice * item.quantityInCart,
-        appliedPromotionId: item.appliedPromotionId,
+        ...(item.appliedPromotionId && { appliedPromotionId: item.appliedPromotionId }),
     }));
     
     const saleData: Omit<Sale, 'id' | 'receiptNumber'> = {
@@ -356,13 +519,18 @@ export const POSPage: React.FC = () => {
     };
     
     try {
-        await addSale(saleData);
+        const savedSale = await addSale(saleData);
         Swal.fire({
+            toast: true,
+            position: 'top-end',
             icon: 'success',
             title: t('saleSuccess'),
             showConfirmButton: false,
-            timer: 1500
+            timer: 2000
         });
+        
+        handlePrintReceipt(savedSale);
+        
         resetSaleState();
         setIsCheckoutModalOpen(false);
     } catch (error: any) {
@@ -493,7 +661,12 @@ export const POSPage: React.FC = () => {
                     <Button onClick={handleApplyPromotions} variant="secondary" className="w-full h-12 text-lg bg-yellow-500 hover:bg-yellow-600">
                         <PromotionIcon /> {t('applyPromotions')}
                     </Button>
-                    <Button onClick={handleOpenCheckout} className="w-full h-14 text-xl bg-green-600 hover:bg-green-700">{t('checkout')}</Button>
+                    <div className="flex gap-2">
+                        <Button onClick={handleOpenPreview} variant="outline" className="w-1/2 h-14 text-lg">
+                            {t('printPreview')}
+                        </Button>
+                        <Button onClick={handleOpenCheckout} className="w-1/2 h-14 text-xl bg-green-600 hover:bg-green-700">{t('checkout')}</Button>
+                    </div>
                     <Button onClick={handleClearBill} variant="outline" className="w-full h-10">{t('clearBillRed')}</Button>
                 </div>
             </div>
@@ -506,6 +679,16 @@ export const POSPage: React.FC = () => {
         </Modal>
         <PriceSelectionModal isOpen={isPriceModalOpen} onClose={() => setIsPriceModalOpen(false)} cartItem={selectedCartItemForPriceChange} onPriceSelect={handlePriceSelect} />
 
+        {isPreviewModalOpen && (
+            <Modal isOpen={isPreviewModalOpen} onClose={() => setIsPreviewModalOpen(false)} title={t('printPreview')}>
+                <PrintableReceipt
+                    data={previewData}
+                    settings={storeSettings}
+                    t={t}
+                    formatCurrency={formatCurrency}
+                />
+            </Modal>
+        )}
 
         {/* Checkout Modal */}
         {isCheckoutModalOpen && (
