@@ -17,6 +17,7 @@
     "jspdf-autotable": "^3.8.2"
   },
   "devDependencies": {
+    "@vitejs/plugin-react": "^5.2.0",
     "@types/node": "^22.14.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
