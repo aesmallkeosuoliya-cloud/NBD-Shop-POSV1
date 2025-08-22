@@ -477,7 +477,7 @@ export const deleteCustomer = async (id: string): Promise<void> => {
 
 
 // --- Sale Service ---
-export const addSale = async (saleData: Omit<Sale, 'id' | 'receiptNumber'>): Promise<string> => {
+export const addSale = async (saleData: Omit<Sale, 'id' | 'receiptNumber'>): Promise<Sale> => {
   const saleTimestamp = new Date(saleData.transactionDate).toISOString(); 
   const currentProcessingTimestamp = new Date().toISOString(); // For customer updatedAt
   const uniqueSuffix = Math.random().toString(36).substring(2, 7).toUpperCase();
@@ -552,7 +552,7 @@ export const addSale = async (saleData: Omit<Sale, 'id' | 'receiptNumber'>): Pro
   updates[`sales/${saleId}`] = cleanUndefinedProps(fullSaleData); 
   
   await db.ref('/').update(updates); 
-  return saleId;
+  return fullSaleData;
 };
 
 export const getSales = async (): Promise<Sale[]> => {

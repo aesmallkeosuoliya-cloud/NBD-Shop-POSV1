@@ -1029,7 +1029,7 @@ const translations: Record<Language, Translations> = {
     printList: 'รายการพิมพ์',
     noItemsInQueue: 'ไม่มีรายการในคิวพิมพ์',
     print: 'พิมพ์',
-    printPreview: 'ตัวอย่างการพิมพ์',
+    printPreview: 'แสดงตัวอย่างก่อนพิมพ์',
     barcodeSettings: 'ตั้งค่าและพิมพ์บาร์โค้ด',
     selectProduct: 'เลือกสินค้า',
     searchProduct: 'ค้นหาสินค้า...',

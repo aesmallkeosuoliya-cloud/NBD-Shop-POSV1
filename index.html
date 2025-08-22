@@ -53,7 +53,7 @@
     }
     
     /* Hide print areas on screen by default */
-    #barcode-print-area-wrapper, #po-print-area-wrapper, #stock-movement-print-area-wrapper {
+    #barcode-print-area-wrapper, #po-print-area-wrapper, #stock-movement-print-area-wrapper, #receipt-print-area-wrapper {
         display: none;
     }
 
@@ -149,7 +149,8 @@
       /* When printing, the root app should be hidden if a specific print area is shown */
       body.printing-barcodes #root,
       body.printing-po #root,
-      body.printing-stock-movement #root {
+      body.printing-stock-movement #root,
+      body.printing-receipt #root {
         display: none;
       }
 
@@ -158,7 +159,8 @@
          the targeted print wrapper becomes the ONLY visible element on the page. */
       body.printing-barcodes #barcode-print-area-wrapper,
       body.printing-po #po-print-area-wrapper,
-      body.printing-stock-movement #stock-movement-print-area-wrapper {
+      body.printing-stock-movement #stock-movement-print-area-wrapper,
+      body.printing-receipt #receipt-print-area-wrapper {
         display: block !important;
       }
 
@@ -175,6 +177,7 @@
   <div id="barcode-print-area-wrapper"></div>
   <div id="po-print-area-wrapper"></div>
   <div id="stock-movement-print-area-wrapper"></div>
+  <div id="receipt-print-area-wrapper"></div>
   <script type="module" src="./index.tsx" defer></script>
 </body>
 </html>
