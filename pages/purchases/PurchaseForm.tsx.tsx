@@ -290,6 +290,7 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, isLoadi
   const taxRateValue = exchangeRatesData?.vatRate || 0;
   const taxAmount = taxType === 'calculate' ? subtotal * (taxRateValue / 100) : 0;
   const totalAmount = subtotal + taxAmount;
+  const taxRateForDisplay = taxType === 'calculate' ? taxRateValue : 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -394,7 +395,7 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, isLoadi
 
       <div className="mt-6 text-right space-y-1">
         <p className="text-lg"><span>{t('subtotal')}:</span> <span className="font-semibold">{formatCurrency(subtotal)} {currencySymbol}</span></p>
-        <p className="text-lg"><span>{t('taxAmount')} ({taxRateValue}%):</span> <span className="font-semibold">{formatCurrency(taxAmount)} {currencySymbol}</span></p>
+        <p className="text-lg"><span>{t('taxAmount')} ({taxRateForDisplay}%):</span> <span className="font-semibold">{formatCurrency(taxAmount)} {currencySymbol}</span></p>
         <p className="text-xl font-bold text-purple-700 border-t pt-2 mt-1"><span>{t('grandTotal')}:</span> <span>{formatCurrency(totalAmount)} {currencySymbol}</span></p>
       </div>
 
