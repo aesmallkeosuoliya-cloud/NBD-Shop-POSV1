@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Expense, Supplier } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -8,7 +9,7 @@ import ExpenseForm from './ExpenseForm';
 import LoadingSpinner from '../common/LoadingSpinner';
 import { addExpense, getExpenses, updateExpense, deleteExpense, getSuppliers, isFirebaseInitialized } from '../../services/firebaseService';
 import Input from '../common/Input';
-import { UI_COLORS, EXPENSE_CATEGORIES } from '../../constants';
+import { UI_COLORS, EXPENSE_CATEGORIES, ACCOUNTING_EXPENSE_CATEGORIES } from '../../constants';
 import Card from '../common/Card';
 
 declare var Swal: any; // For SweetAlert2
@@ -35,6 +36,7 @@ const ExpensesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
+  const [filterAccountingCategory, setFilterAccountingCategory] = useState('all');
   const [formLoading, setFormLoading] = useState(false);
   const [allAvailableCategories, setAllAvailableCategories] = useState<string[]>(EXPENSE_CATEGORIES);
 
@@ -156,9 +158,11 @@ const ExpensesPage: React.FC = () => {
         const startDateMatch = !filterStartDate || new Date(e.date) >= new Date(filterStartDate);
         const endDateMatch = !filterEndDate || new Date(e.date) <= new Date(filterEndDate + 'T23:59:59.999Z');
 
-        return termMatch && startDateMatch && endDateMatch;
+        const accountingCategoryMatch = filterAccountingCategory === 'all' || e.accountingCategoryCode === parseInt(filterAccountingCategory, 10);
+
+        return termMatch && startDateMatch && endDateMatch && accountingCategoryMatch;
     });
-  }, [expenses, searchTerm, supplierMap, filterStartDate, filterEndDate]);
+  }, [expenses, searchTerm, supplierMap, filterStartDate, filterEndDate, filterAccountingCategory]);
 
 
   const formatDate = (isoDate: string) => {
@@ -171,6 +175,7 @@ const ExpensesPage: React.FC = () => {
     setSearchTerm('');
     setFilterStartDate('');
     setFilterEndDate('');
+    setFilterAccountingCategory('all');
   };
 
   return (
@@ -183,7 +188,7 @@ const ExpensesPage: React.FC = () => {
       </div>
 
       <Card className="mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
             <Input
                 label={t('dateRangeStart')}
                 type="date"
@@ -205,6 +210,13 @@ const ExpensesPage: React.FC = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 wrapperClassName="mb-0"
             />
+            <div>
+              <label htmlFor="accountingCategoryFilter" className="block text-sm font-medium text-gray-700 mb-1">{t('accountingCategory')}</label>
+              <select id="accountingCategoryFilter" value={filterAccountingCategory} onChange={e => setFilterAccountingCategory(e.target.value)} className="mt-1 block w-full px-3 py-2.5 h-11 bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 sm:text-sm">
+                  <option value="all">{t('all')}</option>
+                  {ACCOUNTING_EXPENSE_CATEGORIES.map(cat => <option key={cat.code} value={cat.code}>{t(cat.labelKey)}</option>)}
+              </select>
+            </div>
             <Button onClick={clearFilters} variant="outline" className="w-full h-10">{t('clearFilters')}</Button>
         </div>
       </Card>
@@ -220,6 +232,7 @@ const ExpensesPage: React.FC = () => {
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('date')}</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('category')}</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('accountingCategory')}</th>
                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('amount')}</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('details')}</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('supplier')}</th>
@@ -232,6 +245,7 @@ const ExpensesPage: React.FC = () => {
                 <tr key={expense.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{formatDate(expense.date)}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{expense.category}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{expense.accountingCategoryName || '-'}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 font-semibold text-right">{formatCurrency(expense.amount)}</td>
                   <td className="px-6 py-4 whitespace-normal text-xs text-gray-500 max-w-sm ">{expense.description}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{expense.supplierId ? supplierMap[expense.supplierId] || t('deleted') : '-'}</td>
@@ -274,7 +288,7 @@ const ExpensesPage: React.FC = () => {
                 </tr>
               ))}
               {filteredExpenses.length === 0 && !isLoading && (
-                 <tr><td colSpan={7} className="text-center py-10 text-gray-500">{t('noDataFound')}</td></tr>
+                 <tr><td colSpan={8} className="text-center py-10 text-gray-500">{t('noDataFound')}</td></tr>
               )}
             </tbody>
           </table>

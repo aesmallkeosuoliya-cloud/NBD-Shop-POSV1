@@ -43,6 +43,12 @@ export const DEFAULT_LANGUAGE = 'lo';
 export const DEFAULT_PRODUCT_CATEGORIES = ["ເຄື່ອງດື່ມ", "ຂະໜົມ", "ຂອງໃຊ້ສ່ວນຕົວ", "ເຄື່ອງຂຽນ", "ອື່ນໆ"]; // Lao Categories
 export const EXPENSE_CATEGORIES = ["ຄ່າເຊົ່າ", "ຄ່າສິນຄ້າ", "ຄ່າເດີນທາງ", "ຄ່າການຕະຫຼາດ", "ຄ່າສາທາລະນຸປະໂພກ", "ອື່ນໆ"]; // Lao Categories
 
+export const ACCOUNTING_EXPENSE_CATEGORIES = [
+  { code: 1, labelKey: 'accountingCategory_cost' }, // ต้นทุน
+  { code: 2, labelKey: 'accountingCategory_selling' }, // ค่าใช้จ่ายในการจำหน่าย
+  { code: 3, labelKey: 'accountingCategory_admin' }, // ค่าใช้จ่ายในการบริหาร
+];
+
 export const CUSTOMER_TYPES = [
   { value: 'cash', labelKey: 'customerTypeCash' },
   { value: 'credit', labelKey: 'customerTypeCredit' },

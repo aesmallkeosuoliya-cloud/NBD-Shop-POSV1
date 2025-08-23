@@ -245,6 +245,8 @@ export interface Expense {
   id: string;
   date: string; // ISO Date string
   category: string;
+  accountingCategoryCode?: number;
+  accountingCategoryName?: string;
   amount: number;
   description: string;
   supplierId?: string;

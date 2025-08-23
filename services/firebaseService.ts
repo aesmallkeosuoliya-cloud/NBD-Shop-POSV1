@@ -1,3 +1,4 @@
+
 // IMPORTANT: This file relies on Firebase SDKs being loaded globally via CDN in index.html.
 // In a typical bundled React app, you'd import from 'firebase/app' and 'firebase/database'.
 
@@ -637,7 +638,8 @@ export const getSalePayments = async (saleId: string): Promise<SalePayment[]> =>
 export const addPurchaseAndProcess = async (
   purchaseInput: Omit<Purchase, 'id' | 'createdAt' | 'updatedAt'>,
   expenseCategoryText: string, 
-  expenseDescriptionTemplate: string
+  expenseDescriptionTemplate: string,
+  costAccountingCategoryName: string
 ): Promise<string> => {
   const newPurchaseRef = getRef('purchases').push(); // This is a Stock-In document
   const purchaseId = newPurchaseRef.key;
@@ -693,6 +695,8 @@ export const addPurchaseAndProcess = async (
     description: expenseDescription,
     supplierId: purchaseInput.supplierId,
     relatedPurchaseId: purchaseId, // Link expense to this stock-in document
+    accountingCategoryCode: 1, // Hardcoded to 1 for Cost
+    accountingCategoryName: costAccountingCategoryName,
   };
   const newExpenseRef = getRef('expenses').push();
   const expenseId = newExpenseRef.key;

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Purchase, PurchaseOrder } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -64,7 +65,8 @@ const PurchasesPage: React.FC = () => {
     try {
       const expenseCategoryText = t('purchaseExpenseCategory');
       const expenseDescriptionTemplate = t('purchaseExpenseDescription');
-      await addPurchaseAndProcess(purchaseData, expenseCategoryText, expenseDescriptionTemplate);
+      const costAccountingCategoryName = t('accountingCategory_cost');
+      await addPurchaseAndProcess(purchaseData, expenseCategoryText, expenseDescriptionTemplate, costAccountingCategoryName);
       Swal.fire(t('success'), t('purchaseSuccess'), 'success');
       navigate('/purchase-history', { replace: true }); 
     } catch (error) {
