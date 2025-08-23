@@ -429,13 +429,15 @@ export const POSPage: React.FC = () => {
         receiptPrintAreaRootRef.current = createRoot(printAreaContainer);
     }
     
+    const totalDiscount = (saleToPrint.totalCartItemDiscountAmount || 0) + (saleToPrint.overallSaleDiscountAmountCalculated || 0);
+
     const receiptData: ReceiptData = {
         receiptNumber: saleToPrint.receiptNumber,
         transactionDate: saleToPrint.transactionDate,
         customerName: saleToPrint.customerName,
         items: saleToPrint.items.map(i => ({ productName: i.productName, quantity: i.quantity, unitPrice: i.unitPriceAfterItemDiscount, totalPrice: i.totalPrice })),
-        subtotal: saleToPrint.subtotalAfterItemDiscounts,
-        discount: saleToPrint.overallSaleDiscountAmountCalculated,
+        subtotal: saleToPrint.totalCartOriginalPrice,
+        discount: totalDiscount,
         vat: saleToPrint.vatAmountFromEditableRate,
         vatRate: editableVatRate,
         grandTotal: saleToPrint.grandTotal,
@@ -520,16 +522,18 @@ export const POSPage: React.FC = () => {
     
     try {
         const savedSale = await addSale(saleData);
+        
+        handlePrintReceipt(savedSale);
+        
         Swal.fire({
             toast: true,
             position: 'top-end',
             icon: 'success',
             title: t('saleSuccess'),
             showConfirmButton: false,
-            timer: 2000
+            timer: 2000,
+            timerProgressBar: true,
         });
-        
-        handlePrintReceipt(savedSale);
         
         resetSaleState();
         setIsCheckoutModalOpen(false);
