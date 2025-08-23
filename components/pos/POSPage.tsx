@@ -87,15 +87,15 @@ const PrintableReceipt: React.FC<{
           </tbody>
         </table>
         <div style={{ borderTop: '1px dashed black', paddingTop: '5px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{t('summarySubtotal')}:</span><span>{formatCurrency(data.subtotal)}</span></div>
-          {data.discount > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{t('modalDiscount')}:</span><span>-{formatCurrency(data.discount)}</span></div>}
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{t('summaryVatWithPercent', { percent: data.vatRate.toString()})}:</span><span>{formatCurrency(data.vat)}</span></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{t('summarySubtotal')}</span><span>{formatCurrency(data.subtotal)}</span></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{t('modalDiscount')}</span><span>-{formatCurrency(data.discount)}</span></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{t('summaryVatWithPercent', { percent: data.vatRate.toString()})}</span><span>{formatCurrency(data.vat)}</span></div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '16px', marginTop: '5px' }}><span>{t('grandTotal')}:</span><span>{formatCurrency(data.grandTotal)}</span></div>
         </div>
          {data.paymentMethod === 'cash' && data.receivedAmount !== undefined && (
           <div style={{ borderTop: '1px dashed black', marginTop: '5px', paddingTop: '5px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{t('receivedAmount')}:</span><span>{formatCurrency(data.receivedAmount)}</span></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{t('changeDue')}:</span><span>{formatCurrency(data.changeGiven ?? 0)}</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{t('receivedAmount')}</span><span>{formatCurrency(data.receivedAmount)}</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{t('changeDue')}</span><span>{formatCurrency(data.changeGiven ?? 0)}</span></div>
           </div>
         )}
         {data.notes && <p style={{ marginTop: '10px', fontSize: '10px', borderTop: '1px dashed black', paddingTop: '5px' }}>{t('notes')}: {data.notes}</p>}
@@ -654,10 +654,10 @@ export const POSPage: React.FC = () => {
             <div className="bg-white rounded-lg shadow-md p-4 flex-grow flex flex-col">
                 <h3 className="text-lg font-semibold mb-4">{t('summary')}</h3>
                 <div className="space-y-2 text-lg flex-grow">
-                    <div className="flex justify-between"><span>{t('summarySubtotal')}:</span><span>{formatCurrency(cartSubtotal)} {currencySymbol}</span></div>
+                    <div className="flex justify-between"><span>{t('summarySubtotal')}</span><span>{formatCurrency(cartSubtotal)} {currencySymbol}</span></div>
                     <div className="flex justify-between"><span>{t('summaryVatWithPercent', {percent: editableVatRate.toString()})}</span><span>{formatCurrency(cartVatAmount)} {currencySymbol}</span></div>
                     <div className="flex justify-between font-bold text-2xl border-t pt-2 mt-2">
-                        <span className="text-gray-900">{t('grandTotal')}</span>
+                        <span className="text-gray-900">{t('grandTotal')}:</span>
                         <span className="text-red-600">{formatCurrency(cartGrandTotal)} {currencySymbol}</span>
                     </div>
                 </div>
@@ -706,7 +706,7 @@ export const POSPage: React.FC = () => {
                         </div>
                         <div className="flex justify-between text-lg"><span>{t('modalTaxAmount', {percent: editableVatRate.toString()})}</span><span>{formatCurrency(modalCalculations.taxAmount)} {currencySymbol}</span></div>
                         <div className="flex justify-between text-2xl font-bold border-t pt-2 mt-2">
-                            <span className="text-gray-900">{t('modalGrandTotal')}</span>
+                            <span className="text-gray-900">{t('modalGrandTotal')}:</span>
                             <span className="text-red-600">{formatCurrency(modalCalculations.grandTotal)} {currencySymbol}</span>
                         </div>
                     </div>
