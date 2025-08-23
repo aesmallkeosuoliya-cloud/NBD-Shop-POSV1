@@ -68,8 +68,8 @@ const FinancialDashboardPage: React.FC = () => {
             const [year, month] = selectedDate.split('-').map(Number);
             
             // --- Period Calculations ---
-            const periodSales = sales.filter(s => s.transactionDate.startsWith(selectedDate));
-            const periodExpenses = expenses.filter(e => e.date.startsWith(selectedDate));
+            const periodSales = sales.filter(s => s.transactionDate && s.transactionDate.startsWith(selectedDate));
+            const periodExpenses = expenses.filter(e => e.date && e.date.startsWith(selectedDate));
             
             const totalRevenue = periodSales.reduce((sum, s) => sum + s.grandTotal, 0);
             const cogs = periodExpenses.filter(e => e.accountingCategoryCode === 1).reduce((sum, e) => sum + e.amount, 0);
@@ -92,12 +92,12 @@ const FinancialDashboardPage: React.FC = () => {
 
             // --- Cash Balance ---
             const startOfPeriod = new Date(year, month - 1, 1);
-            const cashInBefore = sales.filter(s => new Date(s.transactionDate) < startOfPeriod && s.paymentMethod !== 'credit').reduce((sum, s) => sum + s.grandTotal, 0) + salePayments.filter(p => new Date(p.paymentDate) < startOfPeriod).reduce((sum, p) => sum + p.amountPaid, 0);
-            const cashOutBefore = purchases.filter(p => new Date(p.purchaseDate) < startOfPeriod && p.paymentMethod !== 'credit').reduce((sum, p) => sum + p.totalAmount, 0) + expenses.filter(e => new Date(e.date) < startOfPeriod && !e.relatedPurchaseId).reduce((sum, e) => sum + e.amount, 0);
+            const cashInBefore = sales.filter(s => s.transactionDate && new Date(s.transactionDate) < startOfPeriod && s.paymentMethod !== 'credit').reduce((sum, s) => sum + s.grandTotal, 0) + salePayments.filter(p => p.paymentDate && new Date(p.paymentDate) < startOfPeriod).reduce((sum, p) => sum + p.amountPaid, 0);
+            const cashOutBefore = purchases.filter(p => p.purchaseDate && new Date(p.purchaseDate) < startOfPeriod && p.paymentMethod !== 'credit').reduce((sum, p) => sum + p.totalAmount, 0) + expenses.filter(e => e.date && new Date(e.date) < startOfPeriod && !e.relatedPurchaseId).reduce((sum, e) => sum + e.amount, 0);
             const beginningCashBalance = cashInBefore - cashOutBefore;
 
-            const cashInPeriod = periodSales.filter(s => s.paymentMethod !== 'credit').reduce((sum, s) => sum + s.grandTotal, 0) + salePayments.filter(p => p.paymentDate.startsWith(selectedDate)).reduce((sum, p) => sum + p.amountPaid, 0);
-            const cashOutPeriod = purchases.filter(p => p.purchaseDate.startsWith(selectedDate) && p.paymentMethod !== 'credit').reduce((sum, p) => sum + p.totalAmount, 0) + periodExpenses.filter(e => !e.relatedPurchaseId).reduce((sum, e) => sum + e.amount, 0);
+            const cashInPeriod = periodSales.filter(s => s.paymentMethod !== 'credit').reduce((sum, s) => sum + s.grandTotal, 0) + salePayments.filter(p => p.paymentDate && p.paymentDate.startsWith(selectedDate)).reduce((sum, p) => sum + p.amountPaid, 0);
+            const cashOutPeriod = purchases.filter(p => p.purchaseDate && p.purchaseDate.startsWith(selectedDate) && p.paymentMethod !== 'credit').reduce((sum, p) => sum + p.totalAmount, 0) + periodExpenses.filter(e => !e.relatedPurchaseId).reduce((sum, e) => sum + e.amount, 0);
             const endingCashBalance = beginningCashBalance + cashInPeriod - cashOutPeriod;
             
             // --- Monthly Chart Data ---
@@ -107,8 +107,8 @@ const FinancialDashboardPage: React.FC = () => {
                 const monthLabel = new Date(year, i - 1, 1).toLocaleString(localeForFormatting, { month: 'short' });
                 monthlyPerformance.labels.push(monthLabel);
                 
-                const monthlySales = sales.filter(s => s.transactionDate.startsWith(`${year}-${monthStr}`));
-                const monthlyExpenses = expenses.filter(e => e.date.startsWith(`${year}-${monthStr}`));
+                const monthlySales = sales.filter(s => s.transactionDate && s.transactionDate.startsWith(`${year}-${monthStr}`));
+                const monthlyExpenses = expenses.filter(e => e.date && e.date.startsWith(`${year}-${monthStr}`));
                 
                 const mRevenue = monthlySales.reduce((sum, s) => sum + s.grandTotal, 0);
                 const mCogs = monthlyExpenses.filter(e => e.accountingCategoryCode === 1).reduce((sum, e) => sum + e.amount, 0);
@@ -123,7 +123,8 @@ const FinancialDashboardPage: React.FC = () => {
 
             setDashboardData({
                 totalRevenue, grossProfit, netProfit, endingCashBalance,
-                currentRatio, grossMargin, netProfitMargin, debtToEquityRatio,
+                currentRatio: currentAssets / currentLiabilities,
+                grossMargin, netProfitMargin, debtToEquityRatio,
                 monthlyPerformance
             });
         } catch (error) {

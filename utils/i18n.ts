@@ -87,6 +87,7 @@ const translations: Record<Language, Translations> = {
     stockMovementReportPageTitle: 'ລາຍງານການເຄື່ອນໄຫວສິນຄ້າ',
     balanceSheet: 'ງົບສະແດງຖານະການເງິນ',
     cashFlowStatement: 'ງົບກະແສເງິນສົດ',
+    financialDashboard: 'ແດຊບອດພາບລວມການເງິນ',
 
 
     // Sidebar Groups
@@ -776,7 +777,6 @@ const translations: Record<Language, Translations> = {
     taxInvoiceNo: 'ເລກທີ່ໃບກຳກັບ',
     
     // Accounting Reports - NEW
-    financialDashboard: 'ແດຊບອດພາບລວມການເງິນ',
     financialSummary: 'ສະຫຼຸບພາບລວມການເງິນ',
     keyMetrics: 'ຕົວຊີ້ວັດຫຼັກ',
     totalRevenue: 'ລາຍຮັບລວມ',
@@ -796,6 +796,7 @@ const translations: Record<Language, Translations> = {
     selectPeriod: 'ເລືອກຊ່ວງເວລາ',
     year: 'ປີ',
     month: 'ເດືອນ',
+    times: 'ເທົ່າ',
 
     asOfDate: 'ຂໍ້ມູນ ณ ວັນທີ',
     assets: 'ສິນຊັບ',
@@ -933,6 +934,7 @@ const translations: Record<Language, Translations> = {
     stockMovementReportPageTitle: 'รายงานความเคลื่อนไหวสินค้า',
     balanceSheet: 'งบแสดงฐานะการเงิน',
     cashFlowStatement: 'งบกระแสเงินสด',
+    financialDashboard: 'แดชบอร์ดภาพรวมการเงิน',
 
 
     // Sidebar Groups
@@ -1617,7 +1619,6 @@ const translations: Record<Language, Translations> = {
     taxInvoiceNo: 'เลขที่ใบกำกับ',
 
     // Accounting Reports - NEW
-    financialDashboard: 'แดชบอร์ดภาพรวมการเงิน',
     financialSummary: 'สรุปภาพรวมทางการเงิน',
     keyMetrics: 'ตัวชี้วัดหลัก',
     totalRevenue: 'รายรับรวม',
@@ -1637,6 +1638,7 @@ const translations: Record<Language, Translations> = {
     selectPeriod: 'เลือกช่วงเวลา',
     year: 'ปี',
     month: 'เดือน',
+    times: 'เท่า',
     asOfDate: 'ข้อมูล ณ วันที่',
     assets: 'สินทรัพย์',
     liabilities: 'หนี้สิน',
