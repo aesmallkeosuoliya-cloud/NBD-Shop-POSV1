@@ -1,16 +1,14 @@
 
-
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { PurchaseOrder } from '../../types';
+import { PurchaseOrder, Product } from '../../types'; // Import Product
 import { useLanguage } from '../../contexts/LanguageContext';
-import { getPurchaseOrders, deletePurchaseOrder } from '../../services/firebaseService';
+import { getPurchaseOrders, deletePurchaseOrder, getProducts } from '../../services/firebaseService'; // Import getProducts
 import { PO_STATUSES, UI_COLORS } from '../../constants';
 import Button from '../common/Button';
 import Input from '../common/Input';
 import Card from '../common/Card';
 import LoadingSpinner from '../common/LoadingSpinner';
-import PurchaseOrderDetailModal from './PurchaseOrderDetailModal'; // To be created
+import PurchaseOrderDetailModal from './PurchaseOrderDetailModal';
 import { useNavigate } from 'react-router-dom';
 
 declare var Swal: any;
@@ -24,6 +22,7 @@ const PurchaseOrderHistoryPage: React.FC = () => {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [allPOs, setAllPOs] = useState<PurchaseOrder[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]); // New state for products
   const [filteredPOs, setFilteredPOs] = useState<PurchaseOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -49,11 +48,15 @@ const PurchaseOrderHistoryPage: React.FC = () => {
     });
   };
 
-  const fetchPOs = useCallback(async () => {
+  const fetchData = useCallback(async () => { // Renamed from fetchPOs
     setIsLoading(true);
     try {
-      const fetchedPOs = await getPurchaseOrders();
+      const [fetchedPOs, fetchedProducts] = await Promise.all([
+        getPurchaseOrders(),
+        getProducts()
+      ]);
       setAllPOs(fetchedPOs); // Already sorted by date in service
+      setAllProducts(fetchedProducts);
     } catch (error) {
       console.error("Error fetching POs:", error);
       Swal.fire(t('error'), t('errorFetchingPOs'), 'error');
@@ -63,8 +66,8 @@ const PurchaseOrderHistoryPage: React.FC = () => {
   }, [t]);
 
   useEffect(() => {
-    fetchPOs();
-  }, [fetchPOs]);
+    fetchData();
+  }, [fetchData]);
 
   useEffect(() => {
     let result = allPOs;
@@ -117,7 +120,7 @@ const PurchaseOrderHistoryPage: React.FC = () => {
       try {
         await deletePurchaseOrder(poId);
         Swal.fire(t('success'), t('poDeleteSuccess'), 'success');
-        fetchPOs();
+        fetchData();
       } catch (error) {
         console.error("Error deleting PO:", error);
         Swal.fire(t('error'), t('errorOccurred'), 'error');
@@ -226,6 +229,7 @@ const PurchaseOrderHistoryPage: React.FC = () => {
             onClose={() => setIsDetailModalOpen(false)}
             purchaseOrder={selectedPOForDetail}
             onImportToStockIn={handleImportToStockIn}
+            products={allProducts}
         />
       )}
     </div>

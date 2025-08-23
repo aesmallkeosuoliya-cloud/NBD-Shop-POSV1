@@ -1,6 +1,6 @@
 
 import React, { useMemo } from 'react';
-import { PurchaseOrder } from '../../types';
+import { PurchaseOrder, Product } from '../../types'; // Import Product
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PO_STATUSES } from '../../constants';
 import Modal from '../common/Modal';
@@ -11,13 +11,15 @@ interface PurchaseOrderDetailModalProps {
   onClose: () => void;
   purchaseOrder: PurchaseOrder | null;
   onImportToStockIn: (poId: string) => void;
+  products: Product[]; // Add products prop
 }
 
 const PurchaseOrderDetailModal: React.FC<PurchaseOrderDetailModalProps> = ({ 
   isOpen, 
   onClose, 
   purchaseOrder,
-  onImportToStockIn 
+  onImportToStockIn,
+  products 
 }) => {
   const { t, language } = useLanguage();
 
@@ -76,22 +78,31 @@ const PurchaseOrderDetailModal: React.FC<PurchaseOrderDetailModalProps> = ({
                     <th className="px-2 py-1.5 text-left font-medium text-gray-600">{t('unit')}</th>
                     <th className="px-2 py-1.5 text-right font-medium text-gray-600">{t('unitPriceAtPOLabel')}</th>
                     <th className="px-2 py-1.5 text-right font-medium text-gray-600">{t('totalPriceAtPOLabel')}</th>
-                    <th className="px-2 py-1.5 text-right font-medium text-gray-600">{t('quantityReceivedLabel') || 'Qty Rcvd'}</th>
+                    <th className="px-2 py-1.5 text-right font-medium text-gray-600">{t('quantityReceivedLabel')}</th>
+                    <th className="px-2 py-1.5 text-right font-medium text-gray-600">{t('po_quantityOutstanding')}</th>
+                    <th className="px-2 py-1.5 text-right font-medium text-gray-600">{t('stockLabel')}</th>
                 </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                {purchaseOrder.items.map((item, index) => (
-                    <tr key={item.productId + index}>
-                    <td className="px-2 py-1.5 whitespace-nowrap text-gray-800">{item.productName}</td>
-                    <td className="px-2 py-1.5 text-right text-gray-800">{item.quantityOrdered}</td>
-                    <td className="px-2 py-1.5 text-gray-800">{item.unit}</td>
-                    <td className="px-2 py-1.5 text-right text-gray-800">{formatCurrency(item.unitPrice)}</td>
-                    <td className="px-2 py-1.5 text-right font-medium text-gray-900">{formatCurrency(item.totalPrice)}</td>
-                    <td className={`px-2 py-1.5 text-right font-medium ${ (item.quantityReceived || 0) < item.quantityOrdered && purchaseOrder.status !== 'pending' ? 'text-orange-600' : (item.quantityReceived || 0) >= item.quantityOrdered ? 'text-green-600' : 'text-gray-600'}`}>
-                        {item.quantityReceived || 0}
-                    </td>
-                    </tr>
-                ))}
+                {purchaseOrder.items.map((item, index) => {
+                    const productInfo = products.find(p => p.id === item.productId);
+                    const outstandingQty = item.quantityOrdered - (item.quantityReceived || 0);
+                    const currentStock = productInfo ? productInfo.stock : 0;
+                    return (
+                        <tr key={item.productId + index}>
+                            <td className="px-2 py-1.5 whitespace-nowrap text-gray-800">{item.productName}</td>
+                            <td className="px-2 py-1.5 text-right text-gray-800">{item.quantityOrdered}</td>
+                            <td className="px-2 py-1.5 text-gray-800">{item.unit}</td>
+                            <td className="px-2 py-1.5 text-right text-gray-800">{formatCurrency(item.unitPrice)}</td>
+                            <td className="px-2 py-1.5 text-right font-medium text-gray-900">{formatCurrency(item.totalPrice)}</td>
+                            <td className={`px-2 py-1.5 text-right font-medium ${ (item.quantityReceived || 0) < item.quantityOrdered && purchaseOrder.status !== 'pending' ? 'text-orange-600' : (item.quantityReceived || 0) >= item.quantityOrdered ? 'text-green-600' : 'text-gray-600'}`}>
+                                {item.quantityReceived || 0}
+                            </td>
+                            <td className="px-2 py-1.5 text-right font-bold text-red-600">{outstandingQty}</td>
+                            <td className="px-2 py-1.5 text-right font-medium text-blue-600">{currentStock}</td>
+                        </tr>
+                    )
+                })}
                 </tbody>
             </table>
             </div>
