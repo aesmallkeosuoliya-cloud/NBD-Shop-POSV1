@@ -495,7 +495,7 @@ const translations: Record<Language, Translations> = {
     price: 'ລາຄາ',
     subTotal: 'ຍອດລວມ (ກ່ອນ VAT)',
     vat: 'ອາກອນມູນຄ່າເພີ່ມ',
-    paymentMethod: 'ວິທີການຊຳລະເງິນ',
+    paymentMethod: 'ການຊຳລະເງິນ',
     paymentMethodCredit: 'ຕິດໜີ້ (ເຄດິດ)',
     paymentMethodCash: 'ເງິນສົດ',
     paymentMethodTransfer: 'ໂອນເງິນ',
