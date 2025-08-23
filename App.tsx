@@ -27,6 +27,7 @@ import StockMovementReportPage from './components/reports/StockMovementReportPag
 import PromotionsPage from './components/promotions/PromotionsPage'; // New Promotion Page
 import BalanceSheetPage from './components/reports/BalanceSheetPage'; // NEW
 import CashFlowPage from './components/reports/CashFlowPage'; // NEW
+import FinancialDashboardPage from './components/reports/FinancialDashboardPage'; // NEW
 import LoginPage from './components/auth/LoginPage'; 
 import { useLanguage } from './contexts/LanguageContext'; // Correct relative import
 import { useAuth } from './contexts/AuthContext'; 
@@ -87,6 +88,7 @@ const MainLayout: React.FC = () => {
     if (pathname.startsWith('/reports/stock-movement')) return 'stockMovementReportPageTitle';
     if (pathname.startsWith('/reports/balance-sheet')) return 'balanceSheet'; // New
     if (pathname.startsWith('/reports/cash-flow')) return 'cashFlowStatement'; // New
+    if (pathname.startsWith('/reports/financial-dashboard')) return 'financialDashboard'; // New
     if (pathname.startsWith('/settings/exchange-rate')) return 'exchangeRateSettings';
     return 'appName'; 
   };
@@ -177,6 +179,7 @@ const App: React.FC = () => {
           <Route path="/reports/stock-movement" element={<PageWrapper titleKey="stockMovementReportPageTitle"><StockMovementReportPage /></PageWrapper>} />
           <Route path="/reports/balance-sheet" element={<PageWrapper titleKey="balanceSheet"><BalanceSheetPage /></PageWrapper>} />
           <Route path="/reports/cash-flow" element={<PageWrapper titleKey="cashFlowStatement"><CashFlowPage /></PageWrapper>} />
+          <Route path="/reports/financial-dashboard" element={<PageWrapper titleKey="financialDashboard"><FinancialDashboardPage /></PageWrapper>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

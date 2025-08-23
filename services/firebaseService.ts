@@ -1,4 +1,5 @@
 
+
 // IMPORTANT: This file relies on Firebase SDKs being loaded globally via CDN in index.html.
 // In a typical bundled React app, you'd import from 'firebase/app' and 'firebase/database'.
 
@@ -632,6 +633,27 @@ export const getSalePayments = async (saleId: string): Promise<SalePayment[]> =>
     }
     return [];
 }
+
+export const getAllSalePayments = async (): Promise<(SalePayment & {saleId: string})[]> => {
+    const snapshot = await getRef('salePayments').get();
+    if (snapshot.exists()) {
+        const data = snapshot.val(); // This is an object like { saleId1: { paymentId1: {...}, ... }, saleId2: {...} }
+        const allPayments: (SalePayment & {saleId: string})[] = [];
+        for (const saleId in data) {
+            const paymentsForSale = data[saleId];
+            for (const paymentId in paymentsForSale) {
+                allPayments.push({
+                    saleId: saleId,
+                    id: paymentId,
+                    ...paymentsForSale[paymentId]
+                });
+            }
+        }
+        return allPayments;
+    }
+    return [];
+};
+
 
 
 // --- Purchase (Stock-In) Service ---

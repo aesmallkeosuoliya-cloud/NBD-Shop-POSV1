@@ -108,6 +108,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
     {
         titleKey: 'groupAccounting', // New Group
         items: [
+            { path: '/reports/financial-dashboard', labelKey: 'financialDashboard', icon: <ReportsIcon /> },
             { path: '/reports/profit-loss', labelKey: 'profitLossSummaryPageTitle', icon: <ReportsIcon /> },
             { path: '/reports/balance-sheet', labelKey: 'balanceSheet', icon: <ReportsIcon /> },
             { path: '/reports/cash-flow', labelKey: 'cashFlowStatement', icon: <ReportsIcon /> },
