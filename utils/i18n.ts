@@ -135,7 +135,7 @@ const translations: Record<Language, Translations> = {
     receiptSaleHeading: 'ໃບຮັບເງິນ', // General "Receipt"
     receiptItemPlaceholder: 'ສິນຄ້າຕົວຢ່າງ',
     receiptTotalLabel: 'ຍອດລວມ',
-    receiptMultiCurrencyHeader: 'ຜູ້ຈ່າຍເປັນສະກຸນເງິນອື່ນ (ໂດຍປະມານ)',
+    receiptMultiCurrencyHeader: 'ຫຼືຈ່າຍເປັ ນສະກຸນເງິນອື່ນ (ໂດຍປະມານ)',
     receiptTotalThb: 'ຍອດລວມ (THB)',
     receiptTotalUsd: 'ຍອດລວມ (USD)',
     receiptTotalCny: 'ຍອດລວມ (CNY)',
