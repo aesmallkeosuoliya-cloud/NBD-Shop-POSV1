@@ -76,6 +76,28 @@ const StoreSettingsPage: React.FC = () => {
     }
   };
 
+  const handleQrFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+        const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
+        if (!validTypes.includes(file.type)) {
+            Swal.fire(t('error'), t('invalidFileType'), 'error');
+            event.target.value = ''; 
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setSettings(prev => ({ ...prev, qrPaymentUrl: reader.result as string }));
+        };
+        reader.onerror = () => {
+            console.error(t('errorReadingFile'));
+            Swal.fire(t('error'), t('errorReadingFile'), 'error');
+        };
+        reader.readAsDataURL(file);
+    }
+  };
+
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -126,7 +148,7 @@ const StoreSettingsPage: React.FC = () => {
               <Input label={t('phoneLabel')} name="phone" value={settings.phone} onChange={handleChange} placeholder={t('phonePlaceholder')} error={errors.phone} required className="text-base text-gray-900"/>
               <Input label={t('taxIdLabel')} name="taxId" value={settings.taxId} onChange={handleChange} placeholder={t('taxIdPlaceholder')} error={errors.taxId} className="text-base text-gray-900"/>
               
-              <div className="md:col-span-2">
+              <div className="md:col-span-1">
                 <label htmlFor="logoUpload" className="block text-sm font-medium text-gray-700 mb-1">
                     {t('uploadLogoLabel')}
                 </label>
@@ -149,6 +171,31 @@ const StoreSettingsPage: React.FC = () => {
                 )}
                  <p className="mt-1 text-xs text-gray-500">{t('logoPreviewMessage')}</p>
               </div>
+
+               <div className="md:col-span-1">
+                <label htmlFor="qrUpload" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('uploadQrLabel')}
+                </label>
+                <input
+                    type="file"
+                    id="qrUpload"
+                    name="qrUpload"
+                    accept="image/png, image/jpeg, image/jpg, image/svg+xml"
+                    onChange={handleQrFileChange}
+                    className="mt-1 block w-full text-sm text-gray-900 border border-gray-300 rounded-md cursor-pointer bg-gray-50 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 file:mr-4 file:py-2 file:px-4 file:rounded-l-md file:border-0 file:text-sm file:font-semibold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200"
+                />
+                {settings.qrPaymentUrl && (
+                    <div className="mt-3 p-2 border rounded-md inline-block bg-slate-50">
+                        <img
+                            src={settings.qrPaymentUrl}
+                            alt={t('altQrPayment')}
+                            className="max-h-24 mx-auto object-contain"
+                        />
+                    </div>
+                )}
+                 <p className="mt-1 text-xs text-gray-500">{t('qrPaymentPreview')}</p>
+              </div>
+
             </div>
           </Card>
 
@@ -206,6 +253,15 @@ const StoreSettingsPage: React.FC = () => {
               <div className={`border-t border-dashed border-gray-400 mt-1.5 pt-1.5 text-center text-[10px] leading-tight`}>
                 {settings.footerNote || `[${t('receiptFooterText')}]`}
               </div>
+               {settings.qrPaymentUrl && (
+                    <div className="mt-3 text-center">
+                        <img
+                            src={settings.qrPaymentUrl}
+                            alt={t('altQrPayment')}
+                            className="max-w-[100px] mx-auto object-contain"
+                        />
+                    </div>
+                )}
             </div>
           </Card>
         </div>

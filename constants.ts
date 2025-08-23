@@ -77,7 +77,8 @@ export const DEFAULT_STORE_SETTINGS: StoreSettings = {
   address: "ທີ່ຢູ່ຮ້ານຄ້າ (ຕົວຢ່າງ)",
   phone: "020-123-4567", 
   taxId: "ເລກປະຈຳຕົວຜູ້ເສຍພາສີ (ຕົວຢ່າງ)",
-  logoUrl: "", 
+  logoUrl: "",
+  qrPaymentUrl: "",
   footerNote: "ຂອບໃຈທີ່ໃຊ້ບໍລິການ",
   defaultLanguage: Language.LO,
   defaultVatRateForPO: 7, // Default 7% VAT for Purchase Orders

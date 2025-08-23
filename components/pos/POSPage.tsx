@@ -1,7 +1,8 @@
 
+
 import React, { useState, useEffect, useCallback, useMemo, ChangeEvent, useRef } from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import { Product, CartItem, Sale, SaleTransactionItem, Customer, StoreSettings, Language, Promotion } from '../../types';
+import { Product, CartItem, Sale, SaleTransactionItem, Customer, StoreSettings, Language, Promotion, ExchangeRates } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getProducts, addSale, isFirebaseInitialized, getCustomers, addCustomer, getStoreSettings, getActivePromotions, getExchangeRates } from '../../services/firebaseService';
 import Input from '../common/Input';
@@ -50,9 +51,10 @@ interface ReceiptData {
 const PrintableReceipt: React.FC<{
     data: ReceiptData;
     settings: StoreSettings;
+    exchangeRates: ExchangeRates | null;
     t: (key: string, replacements?: Record<string, string>) => string;
     formatCurrency: (value: number) => string;
-}> = ({ data, settings, t, formatCurrency }) => {
+}> = ({ data, settings, exchangeRates, t, formatCurrency }) => {
     return (
       <div style={{ width: '288px', fontFamily: "'Phetsarath OT', 'Noto Sans Lao', sans-serif", fontSize: '12px', color: 'black', margin: '0 auto', padding: '10px', background: 'white' }}>
         <div style={{ textAlign: 'center', marginBottom: '10px' }}>
@@ -87,7 +89,7 @@ const PrintableReceipt: React.FC<{
           </tbody>
         </table>
         <div style={{ borderTop: '1px dashed black', paddingTop: '5px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{t('summarySubtotal')}</span><span>{formatCurrency(data.subtotal)}</span></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{t('summarySubtotal')}:</span><span>{formatCurrency(data.subtotal)}</span></div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{t('modalDiscount')}</span><span>-{formatCurrency(data.discount)}</span></div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{t('summaryVatWithPercent', { percent: data.vatRate.toString()})}</span><span>{formatCurrency(data.vat)}</span></div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '16px', marginTop: '5px' }}><span>{t('grandTotal')}:</span><span>{formatCurrency(data.grandTotal)}</span></div>
@@ -102,6 +104,21 @@ const PrintableReceipt: React.FC<{
         <div style={{ textAlign: 'center', marginTop: '15px', borderTop: '1px dashed black', paddingTop: '5px' }}>
           <p style={{ margin: 0 }}>{data.footerNote}</p>
         </div>
+
+        {exchangeRates && (exchangeRates.thb > 0 || exchangeRates.usd > 0 || exchangeRates.cny > 0) && (
+            <div style={{ borderTop: '1px dashed black', marginTop: '10px', paddingTop: '5px', fontSize: '11px' }}>
+                <p style={{ margin: '1px 0', fontWeight: 'bold' }}>{t('receiptMultiCurrencyHeader')}</p>
+                {exchangeRates.thb > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{t('receiptTotalThb')}:</span><span>{(data.grandTotal / exchangeRates.thb).toFixed(2)}</span></div>}
+                {exchangeRates.usd > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{t('receiptTotalUsd')}:</span><span>{(data.grandTotal / exchangeRates.usd).toFixed(2)}</span></div>}
+                {exchangeRates.cny > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{t('receiptTotalCny')}:</span><span>{(data.grandTotal / exchangeRates.cny).toFixed(2)}</span></div>}
+            </div>
+        )}
+
+        {settings.qrPaymentUrl && (
+            <div style={{ textAlign: 'center', marginTop: '10px' }}>
+                <img src={settings.qrPaymentUrl} alt={t('altQrPayment')} style={{ maxWidth: '120px', margin: '0 auto' }} />
+            </div>
+        )}
       </div>
     );
 };
@@ -115,6 +132,7 @@ export const POSPage: React.FC = () => {
   const [storeSettings, setStoreSettings] = useState<StoreSettings>(DEFAULT_STORE_SETTINGS);
   const [activePromotions, setActivePromotions] = useState<Promotion[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [exchangeRates, setExchangeRates] = useState<ExchangeRates | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
@@ -170,6 +188,7 @@ export const POSPage: React.FC = () => {
       setCustomers(fetchedCustomers.sort((a,b) => a.name.localeCompare(b.name)));
       setStoreSettings(fetchedStoreSettings || DEFAULT_STORE_SETTINGS);
       setActivePromotions(fetchedActivePromotions);
+      setExchangeRates(fetchedExchangeRates);
       if (fetchedExchangeRates && fetchedExchangeRates.vatRate !== undefined) {
         setEditableVatRate(fetchedExchangeRates.vatRate);
       }
@@ -452,6 +471,7 @@ export const POSPage: React.FC = () => {
         <PrintableReceipt
             data={receiptData}
             settings={storeSettings}
+            exchangeRates={exchangeRates}
             t={t}
             formatCurrency={formatCurrency}
         />
@@ -467,7 +487,7 @@ export const POSPage: React.FC = () => {
         window.addEventListener('afterprint', cleanup);
         window.print();
     }, 500);
-  }, [storeSettings, t, formatCurrency, editableVatRate]);
+  }, [storeSettings, t, formatCurrency, editableVatRate, exchangeRates]);
   
   const handleProcessSale = async () => {
     setIsProcessingSale(true);
@@ -688,6 +708,7 @@ export const POSPage: React.FC = () => {
                 <PrintableReceipt
                     data={previewData}
                     settings={storeSettings}
+                    exchangeRates={exchangeRates}
                     t={t}
                     formatCurrency={formatCurrency}
                 />

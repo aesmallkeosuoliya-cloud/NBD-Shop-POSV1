@@ -1,4 +1,5 @@
 
+
 export enum Language {
   LO = 'lo',
   TH = 'th',
@@ -327,6 +328,7 @@ export interface StoreSettings {
   phone: string;
   taxId: string;
   logoUrl: string; 
+  qrPaymentUrl?: string;
   footerNote: string;
   defaultLanguage: Language;
   defaultVatRateForPO?: number; // Optional default VAT rate for Purchase Orders

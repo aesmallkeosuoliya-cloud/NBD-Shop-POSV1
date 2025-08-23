@@ -109,6 +109,9 @@ const translations: Record<Language, Translations> = {
     uploadLogoLabel: 'ເລືອກຮູບໂລໂກ້ຮ້ານ',
     logoPreviewMessage: 'ຮູບໂລໂກ້ຈະປະກົດຢູ່ເທິງໃບບິນຫຼັງຈາກບັນທຶກ',
     altLogoStore: 'ໂລໂກ້ຮ້ານຄ້າ',
+    uploadQrLabel: 'ອັບໂຫຼດ QR Payment',
+    qrPaymentPreview: 'QR Code ຈະສະແດງໃນໃບບິນ',
+    altQrPayment: 'QR Payment',
     invalidFileType: 'ປະເພດໄຟລ໌ບໍ່ຖືກຕ້ອງ. ກະລຸນາອັບໂຫລດ PNG, JPG, JPEG, ຫຼື SVG.',
     errorReadingFile: 'ເກີດຂໍ້ຜິດພາດໃນການອ່ານໄຟລ໌.',
     receiptFooterGroup: 'ຂໍ້ຄວາມທ້າຍໃບບິນ',
@@ -132,6 +135,10 @@ const translations: Record<Language, Translations> = {
     receiptSaleHeading: 'ໃບຮັບເງິນ', // General "Receipt"
     receiptItemPlaceholder: 'ສິນຄ້າຕົວຢ່າງ',
     receiptTotalLabel: 'ຍອດລວມ',
+    receiptMultiCurrencyHeader: 'ຜູ້ຈ່າຍເປັນສະກຸນເງິນອື່ນ (ໂດຍປະມານ)',
+    receiptTotalThb: 'ຍອດລວມ (THB)',
+    receiptTotalUsd: 'ຍອດລວມ (USD)',
+    receiptTotalCny: 'ຍອດລວມ (CNY)',
 
     // Exchange Rate Settings - NEW
     exchangeRateSettings: 'ຕັ້ງຄ່າອັດຕາແລກປ່ຽນ',
@@ -863,6 +870,9 @@ const translations: Record<Language, Translations> = {
     uploadLogoLabel: 'เลือกรูปโลโก้ร้าน',
     logoPreviewMessage: 'รูปโลโก้จะปรากฏบนใบเสร็จหลังจากบันทึก',
     altLogoStore: 'โลโก้ร้านค้า',
+    uploadQrLabel: 'อัปโหลด QR Payment',
+    qrPaymentPreview: 'QR Code จะแสดงในใบเสร็จ',
+    altQrPayment: 'QR Payment',
     invalidFileType: 'ประเภทไฟล์ไม่ถูกต้อง กรุณาอัปโหลด PNG, JPG, JPEG, หรือ SVG',
     errorReadingFile: 'เกิดข้อผิดพลาดในการอ่านไฟล์',
     receiptFooterGroup: 'ข้อความท้ายใบเสร็จ',
@@ -886,6 +896,10 @@ const translations: Record<Language, Translations> = {
     receiptSaleHeading: 'ใบเสร็จรับเงิน',
     receiptItemPlaceholder: 'สินค้าตัวอย่าง',
     receiptTotalLabel: 'ยอดรวม',
+    receiptMultiCurrencyHeader: 'ชำระเป็นสกุลเงินอื่น (โดยประมาณ)',
+    receiptTotalThb: 'ยอดรวม (THB)',
+    receiptTotalUsd: 'ยอดรวม (USD)',
+    receiptTotalCny: 'ยอดรวม (CNY)',
 
     // Exchange Rate Settings - NEW
     exchangeRateSettings: 'ตั้งค่าอัตราแลกเปลี่ยน',
