@@ -752,13 +752,10 @@ export const getPurchases = async (): Promise<Purchase[]> => { // Stock-In Histo
 
 export const getPurchasesByPoId = async (poId: string): Promise<Purchase[]> => {
   if (!poId) return [];
-  const snapshot = await getRef('purchases').orderByChild('relatedPoId').equalTo(poId).get();
-  if (snapshot.exists()) {
-    const data = snapshot.val();
-    const purchasesArray = Object.keys(data).map(key => ({ id: key, ...data[key] }));
-    return purchasesArray.sort((a,b) => new Date(b.purchaseDate).getTime() - new Date(a.purchaseDate).getTime());
-  }
-  return [];
+  // Inefficiently fetches all purchases and filters on the client.
+  // The recommended fix is to add a Firebase rule: `".indexOn": "relatedPoId"` to the "purchases" path.
+  const allPurchases = await getPurchases();
+  return allPurchases.filter(p => p.relatedPoId === poId);
 };
 
 
