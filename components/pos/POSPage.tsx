@@ -654,7 +654,7 @@ export const POSPage: React.FC = () => {
             <div className="bg-white rounded-lg shadow-md p-4 flex-grow flex flex-col">
                 <h3 className="text-lg font-semibold mb-4">{t('summary')}</h3>
                 <div className="space-y-2 text-lg flex-grow">
-                    <div className="flex justify-between"><span>{t('summarySubtotal')}</span><span>{formatCurrency(cartSubtotal)} {currencySymbol}</span></div>
+                    <div className="flex justify-between"><span>{t('summarySubtotal')}:</span><span>{formatCurrency(cartSubtotal)} {currencySymbol}</span></div>
                     <div className="flex justify-between"><span>{t('summaryVatWithPercent', {percent: editableVatRate.toString()})}</span><span>{formatCurrency(cartVatAmount)} {currencySymbol}</span></div>
                     <div className="flex justify-between font-bold text-2xl border-t pt-2 mt-2">
                         <span className="text-gray-900">{t('grandTotal')}</span>
