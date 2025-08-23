@@ -1,13 +1,7 @@
 
-
-
-
-
-
-
-
 import React, { useState, useEffect } from 'react';
-import { HashRouter, Routes, Route, useLocation, Navigate, Outlet } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
+const { HashRouter, Routes, Route, useLocation, Navigate, Outlet } = ReactRouterDOM;
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 import DashboardPage from './components/dashboard/DashboardPage';

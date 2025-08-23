@@ -1,5 +1,7 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
+const { useNavigate } = ReactRouterDOM;
 import { Product, Supplier } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import Button from '../common/Button';

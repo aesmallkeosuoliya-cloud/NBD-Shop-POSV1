@@ -1,5 +1,7 @@
+
 import React, { useState, useRef, useCallback, ChangeEvent, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
+const { useNavigate } = ReactRouterDOM;
 import * as XLSX from 'xlsx';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { updateMultipleProducts, ProductUpdatePayload, getProducts } from '../../services/firebaseService';

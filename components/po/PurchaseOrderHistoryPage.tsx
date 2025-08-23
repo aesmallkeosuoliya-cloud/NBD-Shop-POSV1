@@ -9,7 +9,8 @@ import Input from '../common/Input';
 import Card from '../common/Card';
 import LoadingSpinner from '../common/LoadingSpinner';
 import PurchaseOrderDetailModal from './PurchaseOrderDetailModal';
-import { useNavigate } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
+const { useNavigate } = ReactRouterDOM;
 
 declare var Swal: any;
 

@@ -1,5 +1,7 @@
+
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
+const { useParams } = ReactRouterDOM;
 import PurchaseOrderForm from './PurchaseOrderForm';
 
 const PurchaseOrderPage: React.FC = () => {

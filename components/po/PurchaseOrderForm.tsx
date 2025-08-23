@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import { useNavigate } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
+const { useNavigate } = ReactRouterDOM;
 import { PurchaseOrder, PurchaseOrderItem, Product, Supplier, StoreSettings, PurchaseOrderStatus } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { getProducts, getSuppliers, addPurchaseOrder, updatePurchaseOrder, getPurchaseOrderById, getStoreSettings } from '../../services/firebaseService';

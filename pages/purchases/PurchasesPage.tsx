@@ -1,15 +1,15 @@
 
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Purchase, PurchaseOrder } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import Button from '../../components/common/Button'; 
 import Card from '../../components/common/Card'; 
-import PurchaseForm from './PurchaseForm.tsx.tsx';
+import PurchaseForm from './PurchaseForm';
 import LoadingSpinner from '../../components/common/LoadingSpinner'; 
 import { addPurchaseAndProcess, getPurchaseOrderById } from '../../services/firebaseService';
 import { UI_COLORS } from '../../constants';
-import { useLocation, useNavigate } from 'react-router-dom';
+import * as ReactRouterDOM from 'react-router-dom';
+const { useLocation, useNavigate } = ReactRouterDOM;
 import SelectPOModal from '../../components/po/SelectPOModal'; 
 
 declare var Swal: any; // For SweetAlert2
