@@ -10,6 +10,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { getPurchases, isFirebaseInitialized } from '../../services/firebaseService';
 import Input from '../../components/common/Input';
 import Card from '../../components/common/Card';
+import { PURCHASE_PAYMENT_METHODS_OPTIONS } from '../../constants';
 
 declare var Swal: any; // For SweetAlert2
 
@@ -92,6 +93,13 @@ export const PurchaseHistoryPage: React.FC = () => {
     setFilterSupplier('');
   };
 
+  const getPaymentMethodLabel = (method?: string) => {
+    if (!method) return '-';
+    const option = PURCHASE_PAYMENT_METHODS_OPTIONS.find(opt => opt.value === method);
+    return option ? t(option.labelKey) : method;
+  };
+
+
   return (
     <div className="p-4 md:p-6">
       <h1 className="text-2xl font-semibold text-gray-700 mb-6">{t('purchaseHistory')}</h1>
@@ -116,7 +124,7 @@ export const PurchaseHistoryPage: React.FC = () => {
                           <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('purchaseDate')}</th>
                           <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('purchaseOrderNumber')}</th>
                           <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('supplier')}</th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('purchaseCategory')}</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('paymentMethod')}</th>
                           <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('totalPurchaseAmount')}</th>
                           <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">{t('actions')}</th>
                       </tr>
@@ -127,7 +135,7 @@ export const PurchaseHistoryPage: React.FC = () => {
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{formatDate(purchase.purchaseDate)}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{purchase.purchaseOrderNumber || (purchase.relatedPoId ? `PO: ${purchase.relatedPoId.slice(-6)}` : '-')}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{purchase.supplierName || t('unknown')}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{purchase.purchaseCategory}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{getPaymentMethodLabel(purchase.paymentMethod)}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 font-semibold text-right">{formatCurrency(purchase.totalAmount)}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                                   <Button variant="ghost" size="sm" onClick={() => handleViewDetails(purchase)} className="text-blue-600 hover:text-blue-900 p-1" title={t('details')}><EyeIcon /></Button>
@@ -153,7 +161,7 @@ export const PurchaseHistoryPage: React.FC = () => {
                   <p><strong className="text-gray-700">{t('purchaseDate')}:</strong> <span className="text-gray-800">{formatDate(selectedPurchase.purchaseDate)}</span></p>
                   <p><strong className="text-gray-700">{t('purchaseOrderNumber')}:</strong> <span className="text-gray-800">{selectedPurchase.purchaseOrderNumber || (selectedPurchase.relatedPoId ? `PO Ref: ${selectedPurchase.relatedPoId.slice(-6)}` : '-')}</span></p>
                   <p><strong className="text-gray-700">{t('supplier')}:</strong> <span className="text-gray-800">{selectedPurchase.supplierName || t('unknown')}</span></p>
-                  <p><strong className="text-gray-700">{t('purchaseCategory')}:</strong> <span className="text-gray-800">{selectedPurchase.purchaseCategory}</span></p>
+                  <p><strong className="text-gray-700">{t('paymentMethod')}:</strong> <span className="text-gray-800">{getPaymentMethodLabel(selectedPurchase.paymentMethod)}</span></p>
                   <p><strong className="text-gray-700">{t('totalPurchaseAmount')}:</strong> <span className="text-gray-800 font-semibold">{formatCurrency(selectedPurchase.totalAmount)}</span></p>
                   {selectedPurchase.notes && <p><strong className="text-gray-700">{t('notes')}:</strong> <span className="text-gray-800">{selectedPurchase.notes}</span></p>}
                   

@@ -76,6 +76,12 @@ export const PAYMENT_METHODS_OPTIONS = [
   { value: 'credit', labelKey: 'paymentCreditSaleType' }, // Added new credit payment type
 ];
 
+export const PURCHASE_PAYMENT_METHODS_OPTIONS = [
+  { value: 'credit', labelKey: 'paymentMethodCredit' },
+  { value: 'cash', labelKey: 'paymentMethodCash' },
+  { value: 'transfer', labelKey: 'paymentMethodTransfer' },
+];
+
 export const PURCHASE_CATEGORIES = ["ສັ່ງຈາກຜູ້ສະໜອງ", "ຊື້ອອນລາຍ", "ຊື້ໜ้าร้าน/ตลาด", "ອື່ນໆ"]; // Lao Categories
 
 export const DEFAULT_STORE_SETTINGS: StoreSettings = {

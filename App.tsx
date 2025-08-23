@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 const { HashRouter, Routes, Route, useLocation, Navigate, Outlet } = ReactRouterDOM;
@@ -24,6 +25,8 @@ import ExchangeRatePage from './components/settings/ExchangeRatePage'; // NEW Ex
 import ProfitLossPage from './components/reports/ProfitLossPage'; // New Profit & Loss Page
 import StockMovementReportPage from './components/reports/StockMovementReportPage'; // New Stock Movement Report Page
 import PromotionsPage from './components/promotions/PromotionsPage'; // New Promotion Page
+import BalanceSheetPage from './components/reports/BalanceSheetPage'; // NEW
+import CashFlowPage from './components/reports/CashFlowPage'; // NEW
 import LoginPage from './components/auth/LoginPage'; 
 import { useLanguage } from './contexts/LanguageContext'; // Correct relative import
 import { useAuth } from './contexts/AuthContext'; 
@@ -82,6 +85,8 @@ const MainLayout: React.FC = () => {
     if (pathname.startsWith('/settings/store')) return 'storeSettingsPageTitle'; 
     if (pathname.startsWith('/reports/profit-loss')) return 'profitLossSummaryPageTitle';
     if (pathname.startsWith('/reports/stock-movement')) return 'stockMovementReportPageTitle';
+    if (pathname.startsWith('/reports/balance-sheet')) return 'balanceSheet'; // New
+    if (pathname.startsWith('/reports/cash-flow')) return 'cashFlowStatement'; // New
     if (pathname.startsWith('/settings/exchange-rate')) return 'exchangeRateSettings';
     return 'appName'; 
   };
@@ -168,8 +173,10 @@ const App: React.FC = () => {
           <Route path="/credit-tracking" element={<PageWrapper titleKey="creditTrackingPageTitle"><CreditTrackingPage /></PageWrapper>} />
           <Route path="/settings/store" element={<PageWrapper titleKey="storeSettingsPageTitle"><StoreSettingsPage /></PageWrapper>} />
           <Route path="/settings/exchange-rate" element={<PageWrapper titleKey="exchangeRateSettings"><ExchangeRatePage /></PageWrapper>} />
-          <Route path="/reports/profit-loss" element={<PageWrapper titleKey="profitLossSummaryPageTitle"><ProfitLossPage /></PageWrapper>} /> {/* New Route */}
-          <Route path="/reports/stock-movement" element={<PageWrapper titleKey="stockMovementReportPageTitle"><StockMovementReportPage /></PageWrapper>} /> {/* New Route */}
+          <Route path="/reports/profit-loss" element={<PageWrapper titleKey="profitLossSummaryPageTitle"><ProfitLossPage /></PageWrapper>} />
+          <Route path="/reports/stock-movement" element={<PageWrapper titleKey="stockMovementReportPageTitle"><StockMovementReportPage /></PageWrapper>} />
+          <Route path="/reports/balance-sheet" element={<PageWrapper titleKey="balanceSheet"><BalanceSheetPage /></PageWrapper>} />
+          <Route path="/reports/cash-flow" element={<PageWrapper titleKey="cashFlowStatement"><CashFlowPage /></PageWrapper>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

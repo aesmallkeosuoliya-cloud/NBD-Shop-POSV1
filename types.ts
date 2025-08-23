@@ -195,6 +195,7 @@ export interface Purchase { // This is a Stock-In document
   purchaseOrderNumber?: string; // Can be the PO number if related
   relatedPoId?: string; // Link to the PurchaseOrder ID
   items: PurchaseItemDetail[];
+  paymentMethod?: 'credit' | 'cash' | 'transfer';
 
   currency: 'LAK' | 'THB' | 'USD';
   exchangeRate: number;

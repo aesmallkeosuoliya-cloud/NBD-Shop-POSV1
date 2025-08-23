@@ -4,7 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import { getProducts, getSuppliers, getExchangeRates, getPurchasesByPoId } from '../../services/firebaseService';
-import { PURCHASE_CATEGORIES, UI_COLORS } from '../../constants';
+import { PURCHASE_CATEGORIES, UI_COLORS, PURCHASE_PAYMENT_METHODS_OPTIONS } from '../../constants';
 import LoadingSpinner from '../../components/common/LoadingSpinner'; 
 import Card from '../../components/common/Card';
 
@@ -68,6 +68,7 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, isLoadi
   const [currency, setCurrency] = useState<'LAK' | 'THB' | 'USD'>('LAK');
   const [exchangeRate, setExchangeRate] = useState(1);
   const [taxType, setTaxType] = useState<'exempt' | 'calculate'>('exempt');
+  const [paymentMethod, setPaymentMethod] = useState<'credit' | 'cash' | 'transfer'>('credit');
 
   // Item Entry State
   const [currentItem, setCurrentItem] = useState<CurrentPurchaseItemState>(initialCurrentItemState);
@@ -99,6 +100,7 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, isLoadi
             setNotes(initialPOData.notes || '');
             setCurrency('LAK');
             setExchangeRate(1);
+            setPaymentMethod('credit');
 
             const poItemsAsStockInItems: PurchaseItemDetail[] = initialPOData.items.map(poItem => {
                 const productDetails = products.find(p => p.id === poItem.productId);
@@ -119,6 +121,17 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, isLoadi
                 };
             }).filter(item => item.quantity > 0);
             setItems(poItemsAsStockInItems);
+        } else {
+             setPurchaseDate(new Date().toISOString().split('T')[0]);
+             setSupplierId(undefined);
+             setPurchaseCategory(PURCHASE_CATEGORIES[0]);
+             setPurchaseOrderNumber('');
+             setNotes('');
+             setItems([]);
+             setCurrency('LAK');
+             setExchangeRate(1);
+             setTaxType('exempt');
+             setPaymentMethod('credit');
         }
 
       } catch (error) {
@@ -325,6 +338,7 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, isLoadi
       purchaseOrderNumber: purchaseOrderNumber || undefined, 
       notes: notes || undefined,
       items,
+      paymentMethod,
       relatedPoId: initialPOData?.id, 
       currency,
       exchangeRate,
@@ -345,7 +359,7 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, isLoadi
     <form onSubmit={handleSubmit} className="space-y-6 p-1">
       <fieldset className="border p-4 rounded-md">
         <legend className="text-md font-semibold px-2 text-gray-800">{t('details')}</legend>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Input label={t('purchaseDate')} type="date" value={purchaseDate} onChange={e => setPurchaseDate(e.target.value)} required />
           <Input label={t('purchaseOrderNumber')} value={purchaseOrderNumber} onChange={e => setPurchaseOrderNumber(e.target.value)} disabled={!!initialPOData} />
           <select id="supplierId" value={supplierId || ''} onChange={e => setSupplierId(e.target.value || undefined)}
@@ -355,6 +369,13 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, isLoadi
             {availableSuppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
           
+           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('paymentMethod')}</label>
+            <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value as any)} className="mt-1 block w-full px-3 py-2 h-11 bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 sm:text-sm">
+                {PURCHASE_PAYMENT_METHODS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>)}
+            </select>
+           </div>
+
           <div><label className="block text-sm font-medium text-gray-700 mb-1">{t('currency')}</label>
             <select value={currency} onChange={e => setCurrency(e.target.value as any)} disabled={!!initialPOData} className="mt-1 block w-full px-3 py-2 h-11 bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 sm:text-sm">
                 <option value="LAK">LAK</option><option value="THB">THB</option><option value="USD">USD</option>
