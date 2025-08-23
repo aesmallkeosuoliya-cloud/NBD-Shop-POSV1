@@ -276,7 +276,7 @@ const translations: Record<Language, Translations> = {
     fontSizeStore: 'ຂະໜາດຟອນຊື່ຮ້ານ',
     fontSizeProduct: 'ຂະໜາດຟອນສິນຄ້າ',
     fontSizePrice: 'ຂະໜາດຟອນລາຄາ',
-    fontSizeBarcode: 'ຂະໜາດຕົວເລກโค้ด',
+    fontSizeBarcode: 'ຂະໜາດຕົວເລກโค้ດ',
     letterSpacingBarcode: 'ໄລຍະຫ່າງຕົວອັກສອນโค้ด',
     printList: 'ລາຍການພິມ',
     noItemsInQueue: 'ບໍ່ມີລາຍການໃນຄິວພິມ',
@@ -317,7 +317,7 @@ const translations: Record<Language, Translations> = {
     confirmDeactivateSelected: 'ຢືນຢັນການຍົກເລີກໃຊ້ງານ {count} ລາຍການທີ່ເລືອກ?',
     // Context Menu
     copyToClipboard: 'ຄັດລອກໄປທີ່ຄລິບບອດ',
-    copyCellToClipboard: 'ຄັດລອກເນື້ອໃນຕາລາງ',
+    copyCellToClipboard: 'ຄັດລอกເນື້ອໃນຕາລາງ',
     selectAllRows: 'ເລືອກທຸກແຖວ',
     resetLayoutToDefault: 'ຣີເຊັດການຈັດວາງເປັນຄ່າເລີ່ມຕົ້ນ',
     copiedToClipboardSuccess: 'ຄັດລອກໄປທີ່ຄລິບບອດສຳເລັດແລ້ວ',
@@ -562,6 +562,12 @@ const translations: Record<Language, Translations> = {
     filterBySupplier: 'ຄົ້ນຫາຕາມຜູ້ຂາຍ', // New
     quantityReceivedLabel: 'ຈຳນວນທີ່ຮັບແລ້ວ', // New
     cannotExceedPOQuantity: 'ຈຳນວນທີ່ຮັບຕ້ອງບໍ່ເກີນຈຳນວນທີ່ສັ່ງໃນ PO', // New
+    po_quantityOrdered: 'ຈຳນວນທີ່ສັ່ງ',
+    po_quantityPreviouslyReceived: 'ຮັບແລ້ວ',
+    po_quantityOutstanding: 'ຄ້າງຮັບ',
+    po_quantityToReceiveNow: 'ຈຳນວນຮັບ',
+    purchaseHistoryForPO: 'ປະຫວັດການຮັບສິນຄ້າສຳລັບ PO',
+    purchaseHistoryReference: 'ເລກທີ່ອ້າງອີງ',
     filterByPurchaseDateLabel: 'ກອງຕາມວັນທີຮັບ', // New
     searchByDateButton: 'ຄົ້ນຫາຕາມວັນທີ', // New
     clearDateFilterButton: 'ລ້າງຕົວກອງວັນທີ', // New
@@ -1323,6 +1329,12 @@ const translations: Record<Language, Translations> = {
     filterBySupplier: 'ค้นหาตามผู้ขาย',
     quantityReceivedLabel: 'จำนวนที่รับแล้ว',
     cannotExceedPOQuantity: 'จำนวนที่รับต้องไม่เกินจำนวนที่สั่งใน PO',
+    po_quantityOrdered: 'จำนวนที่สั่ง',
+    po_quantityPreviouslyReceived: 'รับแล้ว',
+    po_quantityOutstanding: 'ค้างรับ',
+    po_quantityToReceiveNow: 'จำนวนรับ',
+    purchaseHistoryForPO: 'ประวัติการรับสินค้าสำหรับ PO',
+    purchaseHistoryReference: 'เลขที่อ้างอิง',
     filterByPurchaseDateLabel: 'กรองตามวันที่รับ',
     searchByDateButton: 'ค้นหาตามวันที่',
     clearDateFilterButton: 'ล้างตัวกรองวันที่',

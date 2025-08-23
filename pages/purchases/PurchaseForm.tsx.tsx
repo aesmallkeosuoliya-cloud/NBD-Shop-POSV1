@@ -3,9 +3,10 @@ import { Purchase, PurchaseItemDetail, Product, Supplier, PurchaseOrder, Exchang
 import { useLanguage } from '../../contexts/LanguageContext';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
-import { getProducts, getSuppliers, getExchangeRates } from '../../services/firebaseService';
+import { getProducts, getSuppliers, getExchangeRates, getPurchasesByPoId } from '../../services/firebaseService';
 import { PURCHASE_CATEGORIES, UI_COLORS } from '../../constants';
 import LoadingSpinner from '../../components/common/LoadingSpinner'; 
+import Card from '../../components/common/Card';
 
 declare var Swal: any;
 
@@ -60,6 +61,7 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, isLoadi
   const [purchaseOrderNumber, setPurchaseOrderNumber] = useState(initialPOData?.poNumber || '');
   const [notes, setNotes] = useState(initialPOData?.notes || '');
   const [items, setItems] = useState<PurchaseItemDetail[]>([]);
+  const [purchaseHistoryForPO, setPurchaseHistoryForPO] = useState<Purchase[]>([]);
   
   // New Currency/Tax State
   const [exchangeRatesData, setExchangeRatesData] = useState<ExchangeRates | null>(null);
@@ -87,9 +89,13 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, isLoadi
         setExchangeRatesData(rates);
         
         if (initialPOData) {
+            const history = await getPurchasesByPoId(initialPOData.id);
+            setPurchaseHistoryForPO(history);
+
+            const suffix = history.length > 0 ? `-${history.length}` : '';
             setSupplierId(initialPOData.supplierId);
             setPurchaseCategory(t('importFromPO'));
-            setPurchaseOrderNumber(initialPOData.poNumber);
+            setPurchaseOrderNumber(initialPOData.poNumber + suffix);
             setNotes(initialPOData.notes || '');
             setCurrency('LAK');
             setExchangeRate(1);
@@ -109,6 +115,7 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, isLoadi
                     gpPercentApplied: productDetails && poItem.unitPrice > 0 ? parseFloat((( (productDetails.sellingPrice || 0) - poItem.unitPrice) / (productDetails.sellingPrice || 1) * 100).toFixed(2)) : 0,
                     relatedPoId: initialPOData.id,
                     originalPoQuantity: poItem.quantityOrdered,
+                    quantityPreviouslyReceived: poItem.quantityReceived || 0,
                 };
             }).filter(item => item.quantity > 0);
             setItems(poItemsAsStockInItems);
@@ -389,7 +396,63 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, isLoadi
       {items.length > 0 && (
         <div className="mt-6">
           <h3 className="text-md font-semibold mb-2 text-gray-800">{t('itemsInPurchase')}</h3>
-          <div className="overflow-x-auto bg-white rounded-md shadow"><table className="min-w-full divide-y divide-gray-200 text-xs"><thead className="bg-gray-50"><tr><th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">{t('productName')}</th><th className="px-2 py-2 text-right font-medium text-gray-500 uppercase tracking-wider">{t('quantity')}</th><th className="px-2 py-2 text-right font-medium text-gray-500 uppercase tracking-wider">{t('buyPrice')} ({currency})</th><th className="px-2 py-2 text-right font-medium text-gray-500 uppercase tracking-wider">{t('totalCostPricePerUnit')} ({t('currencyKip')})</th><th className="px-2 py-2 text-right font-medium text-gray-500 uppercase tracking-wider">{t('gpPercent')}</th><th className="px-2 py-2 text-right font-medium text-gray-500 uppercase tracking-wider">{t('sellingPrice')}</th><th className="px-2 py-2 text-right font-medium text-gray-500 uppercase tracking-wider">{t('total')}</th>{!initialPOData && <th className="px-2 py-2 text-center font-medium text-gray-500 uppercase tracking-wider">{t('actions')}</th>}</tr></thead><tbody className="bg-white divide-y divide-gray-200">{items.map((item, index) => (<tr key={index}><td className="px-2 py-2 whitespace-nowrap text-gray-800">{item.productName}</td><td className="px-2 py-2"><Input type="number" min="0" max={item.originalPoQuantity} value={String(item.quantity)} onChange={e => handleItemFieldChange(index, 'quantity', e.target.value)} wrapperClassName="mb-0" className="w-20 text-right h-8"/></td><td className="px-2 py-2"><Input type="number" step="any" min="0" value={String(item.buyPrice)} onChange={e => handleItemFieldChange(index, 'buyPrice', e.target.value)} wrapperClassName="mb-0" className="w-24 text-right h-8"/></td><td className="px-2 py-2 whitespace-nowrap text-gray-600 font-medium text-right">{formatCurrency(item.totalCostPricePerUnit)}</td><td className="px-2 py-2"><Input type="number" step="0.01" min="0" max="99.99" value={item.gpPercentApplied === undefined ? '' : String(item.gpPercentApplied)} onChange={e => handleItemFieldChange(index, 'gpPercentApplied', e.target.value)} wrapperClassName="mb-0" className="w-20 text-right h-8"/></td><td className="px-2 py-2"><Input type="number" step="0.01" min="0" value={String(item.calculatedSellingPrice)} onChange={e => handleItemFieldChange(index, 'calculatedSellingPrice', e.target.value)} wrapperClassName="mb-0" className="w-24 text-right h-8"/></td><td className="px-2 py-2 whitespace-nowrap text-gray-900 font-bold text-right">{formatCurrency(item.totalCostPricePerUnit * item.quantity)}</td>{!initialPOData && <td className="px-2 py-2 text-center"><Button type="button" variant="danger" size="sm" onClick={() => handleRemoveItem(index)} className="p-1"><TrashIcon/></Button></td>}</tr>))}</tbody></table></div>
+          <div className="overflow-x-auto bg-white rounded-md shadow"><table className="min-w-full divide-y divide-gray-200 text-xs"><thead className="bg-gray-50"><tr>
+            <th className="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">{t('productName')}</th>
+            {initialPOData && <th className="px-1 py-2 text-center font-medium text-gray-500 uppercase tracking-wider">{t('po_quantityOrdered')}</th>}
+            {initialPOData && <th className="px-1 py-2 text-center font-medium text-gray-500 uppercase tracking-wider">{t('po_quantityPreviouslyReceived')}</th>}
+            {initialPOData && <th className="px-1 py-2 text-center font-medium text-gray-500 uppercase tracking-wider">{t('po_quantityOutstanding')}</th>}
+            <th className="px-2 py-2 text-right font-medium text-gray-500 uppercase tracking-wider">{initialPOData ? t('po_quantityToReceiveNow') : t('quantity')}</th>
+            <th className="px-2 py-2 text-right font-medium text-gray-500 uppercase tracking-wider">{t('buyPrice')} ({currency})</th>
+            <th className="px-2 py-2 text-right font-medium text-gray-500 uppercase tracking-wider">{t('totalCostPricePerUnit')} ({t('currencyKip')})</th>
+            <th className="px-2 py-2 text-right font-medium text-gray-500 uppercase tracking-wider">{t('gpPercent')}</th>
+            <th className="px-2 py-2 text-right font-medium text-gray-500 uppercase tracking-wider">{t('sellingPrice')}</th>
+            <th className="px-2 py-2 text-right font-medium text-gray-500 uppercase tracking-wider">{t('total')}</th>
+            <th className="px-2 py-2 text-center font-medium text-gray-500 uppercase tracking-wider">{t('actions')}</th>
+            </tr></thead><tbody className="bg-white divide-y divide-gray-200">{items.map((item, index) => {
+                const outstanding = (item.originalPoQuantity || 0) - (item.quantityPreviouslyReceived || 0);
+                return (
+                <tr key={index}>
+                    <td className="px-2 py-2 whitespace-nowrap text-gray-800">{item.productName}</td>
+                    {initialPOData && <td className="px-1 py-2 text-center">{item.originalPoQuantity}</td>}
+                    {initialPOData && <td className="px-1 py-2 text-center">{item.quantityPreviouslyReceived}</td>}
+                    {initialPOData && <td className="px-1 py-2 text-center font-bold text-red-600">{outstanding}</td>}
+                    <td className="px-2 py-2"><Input type="number" min="0" max={item.originalPoQuantity} value={String(item.quantity)} onChange={e => handleItemFieldChange(index, 'quantity', e.target.value)} wrapperClassName="mb-0" className="w-20 text-right h-8"/></td>
+                    <td className="px-2 py-2"><Input type="number" step="any" min="0" value={String(item.buyPrice)} onChange={e => handleItemFieldChange(index, 'buyPrice', e.target.value)} wrapperClassName="mb-0" className="w-24 text-right h-8"/></td>
+                    <td className="px-2 py-2 whitespace-nowrap text-gray-600 font-medium text-right">{formatCurrency(item.totalCostPricePerUnit)}</td>
+                    <td className="px-2 py-2"><Input type="number" step="0.01" min="0" max="99.99" value={item.gpPercentApplied === undefined ? '' : String(item.gpPercentApplied)} onChange={e => handleItemFieldChange(index, 'gpPercentApplied', e.target.value)} wrapperClassName="mb-0" className="w-20 text-right h-8"/></td>
+                    <td className="px-2 py-2"><Input type="number" step="0.01" min="0" value={String(item.calculatedSellingPrice)} onChange={e => handleItemFieldChange(index, 'calculatedSellingPrice', e.target.value)} wrapperClassName="mb-0" className="w-24 text-right h-8"/></td>
+                    <td className="px-2 py-2 whitespace-nowrap text-gray-900 font-bold text-right">{formatCurrency(item.totalCostPricePerUnit * item.quantity)}</td>
+                    <td className="px-2 py-2 text-center"><Button type="button" variant="danger" size="sm" onClick={() => handleRemoveItem(index)} className="p-1"><TrashIcon/></Button></td>
+                </tr>
+            )})}</tbody></table></div>
+        </div>
+      )}
+
+      {initialPOData && purchaseHistoryForPO.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-md font-semibold mb-2 text-gray-800">{`${t('purchaseHistoryForPO')} #${initialPOData.poNumber}`}</h3>
+          <div className="overflow-x-auto bg-white rounded-md shadow max-h-48">
+            <table className="min-w-full divide-y divide-gray-200 text-xs">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-2 py-2 text-left font-medium text-gray-500">{t('purchaseDate')}</th>
+                  <th className="px-2 py-2 text-left font-medium text-gray-500">{t('purchaseHistoryReference')}</th>
+                  <th className="px-2 py-2 text-right font-medium text-gray-500">{t('totalAmount')}</th>
+                  <th className="px-2 py-2 text-left font-medium text-gray-500">{t('notes')}</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {purchaseHistoryForPO.map(purchase => (
+                  <tr key={purchase.id}>
+                    <td className="px-2 py-2 whitespace-nowrap">{new Date(purchase.purchaseDate).toLocaleDateString()}</td>
+                    <td className="px-2 py-2 whitespace-nowrap">{purchase.purchaseOrderNumber || '-'}</td>
+                    <td className="px-2 py-2 text-right font-medium">{formatCurrency(purchase.totalAmount)}</td>
+                    <td className="px-2 py-2">{purchase.notes || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

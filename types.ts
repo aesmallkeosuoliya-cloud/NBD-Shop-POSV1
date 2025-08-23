@@ -183,6 +183,7 @@ export interface PurchaseItemDetail { // This is for Stock-In page
   calculatedSellingPrice: number;
   relatedPoId?: string; // If this stock-in item is from a PO
   originalPoQuantity?: number; // Original quantity ordered in the PO for this item
+  quantityPreviouslyReceived?: number; // New field for PO context
 }
 
 export interface Purchase { // This is a Stock-In document

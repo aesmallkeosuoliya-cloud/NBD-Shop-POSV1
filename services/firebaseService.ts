@@ -750,6 +750,18 @@ export const getPurchases = async (): Promise<Purchase[]> => { // Stock-In Histo
   return [];
 };
 
+export const getPurchasesByPoId = async (poId: string): Promise<Purchase[]> => {
+  if (!poId) return [];
+  const snapshot = await getRef('purchases').orderByChild('relatedPoId').equalTo(poId).get();
+  if (snapshot.exists()) {
+    const data = snapshot.val();
+    const purchasesArray = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+    return purchasesArray.sort((a,b) => new Date(b.purchaseDate).getTime() - new Date(a.purchaseDate).getTime());
+  }
+  return [];
+};
+
+
 export const deletePurchaseAndAssociatedRecords = async (purchaseId: string, logNoteTemplate: string): Promise<void> => {
   const purchaseSnapshot = await getRef(`purchases/${purchaseId}`).get();
   if (!purchaseSnapshot.exists()) {
