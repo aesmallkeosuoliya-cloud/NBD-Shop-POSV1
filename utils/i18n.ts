@@ -1,4 +1,5 @@
 
+
 import { Language, Translations } from '../types';
 
 const translations: Record<Language, Translations> = {
@@ -618,7 +619,15 @@ const translations: Record<Language, Translations> = {
     endDateAfterStartDate: 'ວັນທີສິ້ນສຸດຕ້ອງຢູ່ຫຼັງວັນທີເລີ່ມຕົ້ນ',
     confirmDeletePromotion: 'ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລົບໂປຣໂມຊັນນີ້?',
     errorFetchingPromotions: 'ເກີດຂໍ້ຜິດພາດໃນການໂຫຼດໂປຣໂມຊັນ',
-
+    promotionType: 'ປະເພດໂປຣໂມຊັນ',
+    promotionType_discount: 'ສ່ວນຫຼຸດ',
+    promotionType_free_product: 'ສິນຄ້າແຖມຟຣີ',
+    quantityToBuy: 'ຈຳນວນຊື້ (ຊິ້ນ)',
+    quantityToGetFree: 'ຈຳນວນແຖມ (ຊິ້ນ)',
+    selectFreeProduct: 'ເລືອກສິນຄ້າແຖມ',
+    freeGiftLabel: 'ແຖມຟຣີ',
+    sellingExpenseForPromo: 'ຕົ້ນທຶນສິນຄ້າແຖມ (ໂປຣໂມຊັນ)',
+    sellingExpenseForPromoDesc: 'ຕົ້ນທຶນສິນຄ້າແຖມຈາກບິນເລກທີ່ {receiptNumber}',
 
     // Purchase Orders (PO) - New Section
     purchaseOrderPageTitle: 'ສ້າງໃບສັ່ງຊື້ (PO)',

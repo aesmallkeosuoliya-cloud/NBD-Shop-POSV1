@@ -1,6 +1,7 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { Promotion, Product, PromotionDiscountType, PromotionStatus } from '../../types';
+import { Promotion, Product, PromotionType, PromotionDiscountType, PromotionStatus } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import Input from '../common/Input';
 import Button from '../common/Button';
@@ -14,8 +15,6 @@ interface PromotionFormProps {
   availableProducts: Product[];
 }
 
-const PlusIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>;
-
 const PromotionForm: React.FC<PromotionFormProps> = ({
   initialData,
   onSubmit,
@@ -24,15 +23,22 @@ const PromotionForm: React.FC<PromotionFormProps> = ({
   availableProducts,
 }) => {
   const { t } = useLanguage();
-  const [promotion, setPromotion] = useState<Partial<Omit<Promotion, 'id' | 'createdAt' | 'updatedAt'>>>({
+
+  const getDefaultState = useCallback(() => ({
     name: '',
+    promotionType: 'discount' as PromotionType,
     productIds: [],
-    discountType: 'percent',
+    discountType: 'percent' as PromotionDiscountType,
     discountValue: 0,
+    quantityToBuy: 1,
+    freeProductId: '',
+    quantityToGetFree: 1,
     startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0], // Default to 7 days from now
-    status: 'active',
-  });
+    endDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0],
+    status: 'active' as PromotionStatus,
+  }), []);
+
+  const [promotion, setPromotion] = useState<Partial<Omit<Promotion, 'id' | 'createdAt' | 'updatedAt'>>>(getDefaultState());
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isProductSelectionModalOpen, setIsProductSelectionModalOpen] = useState(false);
 
@@ -41,18 +47,9 @@ const PromotionForm: React.FC<PromotionFormProps> = ({
       const { id, createdAt, updatedAt, ...formData } = initialData;
       setPromotion(formData);
     } else {
-      // Reset for new form
-      setPromotion({
-        name: '',
-        productIds: [],
-        discountType: 'percent',
-        discountValue: 0,
-        startDate: new Date().toISOString().split('T')[0],
-        endDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0],
-        status: 'active',
-      });
+      setPromotion(getDefaultState());
     }
-  }, [initialData]);
+  }, [initialData, getDefaultState]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -68,6 +65,19 @@ const PromotionForm: React.FC<PromotionFormProps> = ({
     }
   };
   
+  const handlePromotionTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newType = e.target.value as PromotionType;
+    setPromotion(prev => ({
+      ...prev,
+      promotionType: newType,
+      discountType: newType === 'discount' ? 'percent' : undefined,
+      discountValue: newType === 'discount' ? 0 : undefined,
+      quantityToBuy: newType === 'free_product' ? 1 : undefined,
+      freeProductId: newType === 'free_product' ? '' : undefined,
+      quantityToGetFree: newType === 'free_product' ? 1 : undefined,
+    }));
+  };
+
   const handleSelectedProductsConfirm = (selectedProductIds: string[]) => {
     setPromotion(prev => ({ ...prev, productIds: selectedProductIds }));
     if (errors.productIds) {
@@ -80,14 +90,21 @@ const PromotionForm: React.FC<PromotionFormProps> = ({
     const newErrors: Record<string, string> = {};
     if (!promotion.name?.trim()) newErrors.name = t('requiredField');
     if (!promotion.productIds || promotion.productIds.length === 0) newErrors.productIds = t('productsRequired');
-    if (promotion.discountValue === undefined || promotion.discountValue <= 0) newErrors.discountValue = t('discountValueRequired');
-    if (promotion.discountType === 'percent' && (promotion.discountValue < 0 || promotion.discountValue > 100)) {
-        newErrors.discountValue = t('discountValueRequired') + ' (0-100% for percentage)';
-    }
     if (!promotion.startDate) newErrors.startDate = t('requiredField');
     if (!promotion.endDate) newErrors.endDate = t('requiredField');
     if (promotion.startDate && promotion.endDate && new Date(promotion.endDate) < new Date(promotion.startDate)) {
         newErrors.endDate = t('endDateAfterStartDate');
+    }
+
+    if (promotion.promotionType === 'discount') {
+        if (promotion.discountValue === undefined || promotion.discountValue <= 0) newErrors.discountValue = t('discountValueRequired');
+        if (promotion.discountType === 'percent' && (promotion.discountValue < 0 || promotion.discountValue > 100)) {
+            newErrors.discountValue = t('discountValueRequired') + ' (0-100%)';
+        }
+    } else if (promotion.promotionType === 'free_product') {
+        if (!promotion.freeProductId) newErrors.freeProductId = t('requiredField');
+        if (!promotion.quantityToBuy || promotion.quantityToBuy <= 0) newErrors.quantityToBuy = t('requiredField');
+        if (!promotion.quantityToGetFree || promotion.quantityToGetFree <= 0) newErrors.quantityToGetFree = t('requiredField');
     }
     
     setErrors(newErrors);
@@ -98,15 +115,18 @@ const PromotionForm: React.FC<PromotionFormProps> = ({
     e.preventDefault();
     if (!validate()) return;
     
-    // Ensure all fields are correctly typed for submission
     const dataToSubmit: Omit<Promotion, 'id' | 'createdAt' | 'updatedAt'> = {
         name: promotion.name!,
+        promotionType: promotion.promotionType!,
         productIds: promotion.productIds!,
-        discountType: promotion.discountType!,
-        discountValue: promotion.discountValue!,
         startDate: promotion.startDate!,
         endDate: promotion.endDate!,
         status: promotion.status!,
+        discountType: promotion.promotionType === 'discount' ? promotion.discountType : undefined,
+        discountValue: promotion.promotionType === 'discount' ? promotion.discountValue : undefined,
+        freeProductId: promotion.promotionType === 'free_product' ? promotion.freeProductId : undefined,
+        quantityToBuy: promotion.promotionType === 'free_product' ? promotion.quantityToBuy : undefined,
+        quantityToGetFree: promotion.promotionType === 'free_product' ? promotion.quantityToGetFree : undefined,
     };
     await onSubmit(dataToSubmit);
   };
@@ -129,16 +149,42 @@ const PromotionForm: React.FC<PromotionFormProps> = ({
           {errors.productIds && <p className="mt-1 text-xs text-red-600">{errors.productIds}</p>}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label htmlFor="discountType" className="block text-sm font-medium text-gray-700 mb-1">{t('discountType')}</label>
-                <select id="discountType" name="discountType" value={promotion.discountType} onChange={handleChange} className="mt-1 block w-full px-3 py-2 bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm h-11">
-                <option value="percent">{t('discountTypePercentage')}</option>
-                <option value="fixed">{t('discountTypeFixedAmount')}</option>
-                </select>
-            </div>
-            <Input label={t('discountValue')} name="discountValue" type="number" step="0.01" min="0" value={promotion.discountValue || 0} onChange={handleChange} error={errors.discountValue} required />
+        <div>
+            <label htmlFor="promotionType" className="block text-sm font-medium text-gray-700 mb-1">{t('promotionType')}</label>
+            <select id="promotionType" name="promotionType" value={promotion.promotionType} onChange={handlePromotionTypeChange} className="mt-1 block w-full px-3 py-2 bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm h-11">
+              <option value="discount">{t('promotionType_discount')}</option>
+              <option value="free_product">{t('promotionType_free_product')}</option>
+            </select>
         </div>
+
+        {promotion.promotionType === 'discount' && (
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label htmlFor="discountType" className="block text-sm font-medium text-gray-700 mb-1">{t('discountType')}</label>
+                    <select id="discountType" name="discountType" value={promotion.discountType} onChange={handleChange} className="mt-1 block w-full px-3 py-2 bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm h-11">
+                    <option value="percent">{t('discountTypePercentage')}</option>
+                    <option value="fixed">{t('discountTypeFixedAmount')}</option>
+                    </select>
+                </div>
+                <Input label={t('discountValue')} name="discountValue" type="number" step="0.01" min="0" value={promotion.discountValue || 0} onChange={handleChange} error={errors.discountValue} required />
+            </div>
+        )}
+
+        {promotion.promotionType === 'free_product' && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md space-y-4">
+                <Input label={t('quantityToBuy')} name="quantityToBuy" type="number" min="1" value={promotion.quantityToBuy || 1} onChange={handleChange} error={errors.quantityToBuy} required />
+                 <div>
+                    <label htmlFor="freeProductId" className="block text-sm font-medium text-gray-700 mb-1">{t('selectFreeProduct')}</label>
+                    <select id="freeProductId" name="freeProductId" value={promotion.freeProductId || ''} onChange={handleChange} className={`mt-1 block w-full px-3 py-2 bg-white text-gray-900 border ${errors.freeProductId ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm h-11`}>
+                        <option value="">-- {t('selectProduct')} --</option>
+                        {availableProducts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                    {errors.freeProductId && <p className="mt-1 text-xs text-red-600">{errors.freeProductId}</p>}
+                </div>
+                <Input label={t('quantityToGetFree')} name="quantityToGetFree" type="number" min="1" value={promotion.quantityToGetFree || 1} onChange={handleChange} error={errors.quantityToGetFree} required />
+            </div>
+        )}
+
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input label={t('startDate')} name="startDate" type="date" value={promotion.startDate || ''} onChange={handleChange} error={errors.startDate} required />

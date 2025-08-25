@@ -479,13 +479,19 @@ export const deleteCustomer = async (id: string): Promise<void> => {
 
 
 // --- Sale Service ---
-export const addSale = async (saleData: Omit<Sale, 'id' | 'receiptNumber'>): Promise<Sale> => {
+export const addSale = async (
+    saleData: Omit<Sale, 'id' | 'receiptNumber'>,
+    expenseCategoryText: string,
+    expenseDescriptionTemplate: string,
+    sellingAccountingCategoryName: string
+): Promise<Sale> => {
   const saleTimestamp = new Date(saleData.transactionDate).toISOString(); 
   const currentProcessingTimestamp = new Date().toISOString(); // For customer updatedAt
   const uniqueSuffix = Math.random().toString(36).substring(2, 7).toUpperCase();
   const receiptNumber = `RCPT-${new Date(saleData.transactionDate).getTime()}-${uniqueSuffix}`;
   
   const updates: {[key: string]: any} = {};
+  let totalCostOfFreeItems = 0;
 
   for (const item of saleData.items) {
     const productSnapshot = await getRef(`products/${item.productId}`).get();
@@ -493,6 +499,10 @@ export const addSale = async (saleData: Omit<Sale, 'id' | 'receiptNumber'>): Pro
     
     const currentProductData = productSnapshot.val();
     const currentProduct: Product = { id: item.productId, ...currentProductData };
+
+    if (item.isFreeGift) {
+        totalCostOfFreeItems += currentProduct.costPrice * item.quantity;
+    }
 
     const stockBefore = currentProduct.stock;
     const stockAfter = stockBefore - item.quantity;
@@ -545,6 +555,25 @@ export const addSale = async (saleData: Omit<Sale, 'id' | 'receiptNumber'>): Pro
           updates[key].relatedDocumentId = saleId; 
       }
   }
+
+  if (totalCostOfFreeItems > 0) {
+      const expenseDescription = expenseDescriptionTemplate.replace('{receiptNumber}', receiptNumber);
+      const expenseData: Omit<Expense, 'id' | 'createdAt'> = {
+          date: saleData.transactionDate,
+          category: expenseCategoryText,
+          amount: totalCostOfFreeItems,
+          description: expenseDescription,
+          relatedPurchaseId: saleId, // Link expense to this sale document for tracking
+          accountingCategoryCode: 2, // 2: Selling Expense
+          accountingCategoryName: sellingAccountingCategoryName,
+      };
+      const newExpenseRef = getRef('expenses').push();
+      const expenseId = newExpenseRef.key;
+      if (expenseId) {
+          updates[`expenses/${expenseId}`] = { ...cleanUndefinedProps(expenseData), id: expenseId, createdAt: saleData.transactionDate };
+      }
+  }
+
 
   const fullSaleData: Sale = { 
     ...saleData,

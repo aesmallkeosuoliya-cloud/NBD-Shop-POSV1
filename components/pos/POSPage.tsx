@@ -201,6 +201,66 @@ export const POSPage: React.FC = () => {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Effect to handle "Buy X Get Y Free" promotions
+  useEffect(() => {
+    const applyFreeProductPromotions = () => {
+        if (activePromotions.length === 0 || allProductsDB.length === 0) return;
+
+        const regularCartItems = cart.filter(item => !item.isFreeGift);
+        const freeProductPromos = activePromotions.filter(p => p.promotionType === 'free_product');
+        let newFreeItems: CartItem[] = [];
+        let promoApplied = false;
+
+        for (const promo of freeProductPromos) {
+            if (!promo.productIds || !promo.quantityToBuy || !promo.freeProductId || !promo.quantityToGetFree) continue;
+
+            const totalMainProductQty = regularCartItems
+                .filter(item => promo.productIds.includes(item.id))
+                .reduce((sum, item) => sum + item.quantityInCart, 0);
+
+            if (totalMainProductQty > 0) {
+                const numTimesTriggered = Math.floor(totalMainProductQty / promo.quantityToBuy);
+                const totalFreeItemsQty = numTimesTriggered * promo.quantityToGetFree;
+
+                if (totalFreeItemsQty > 0) {
+                    const freeProduct = allProductsDB.find(p => p.id === promo.freeProductId);
+                    if (freeProduct) {
+                        const existingRegularItem = regularCartItems.find(item => item.id === freeProduct.id);
+                        const stockReservedForRegularPurchase = existingRegularItem?.quantityInCart || 0;
+                        const availableStockForGift = freeProduct.stock - stockReservedForRegularPurchase;
+
+                        const actualFreeQty = Math.min(totalFreeItemsQty, availableStockForGift);
+                        
+                        if (actualFreeQty > 0) {
+                            newFreeItems.push({
+                                ...freeProduct,
+                                quantityInCart: actualFreeQty,
+                                activeUnitPrice: 0,
+                                itemDiscountType: 'none',
+                                itemDiscountValue: 0,
+                                unitPriceAfterDiscount: 0,
+                                appliedPromotionId: promo.id,
+                                isFreeGift: true,
+                            });
+                            promoApplied = true;
+                        }
+                    }
+                }
+            }
+        }
+        
+        const finalCart = [...regularCartItems, ...newFreeItems];
+        if (JSON.stringify(finalCart) !== JSON.stringify(cart)) {
+            setCart(finalCart);
+        }
+    };
+
+    applyFreeProductPromotions();
+  // We stringify cart to prevent deep comparison loops, but it's a signal to re-evaluate.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(cart.filter(i => !i.isFreeGift)), activePromotions, allProductsDB]);
+
+
   const selectedCustomerDetails = useMemo(() => {
     return customers.find(c => c.id === selectedCustomerId);
   }, [selectedCustomerId, customers]);
@@ -250,10 +310,10 @@ export const POSPage: React.FC = () => {
 
   const addToCart = useCallback((product: Product) => {
     setCart(prevCart => {
-      const existingItem = prevCart.find(item => item.id === product.id);
+      const existingItem = prevCart.find(item => item.id === product.id && !item.isFreeGift); // Only target non-free items
       if (existingItem) {
         if (existingItem.quantityInCart < product.stock) {
-          return prevCart.map(item => item.id === product.id ? { ...item, quantityInCart: item.quantityInCart + 1 } : item);
+          return prevCart.map(item => item.id === product.id && !item.isFreeGift ? { ...item, quantityInCart: item.quantityInCart + 1 } : item);
         } else {
           Swal.fire({ title: t('notEnoughStock'), icon: 'warning', timer: 1500 });
           return prevCart;
@@ -267,6 +327,7 @@ export const POSPage: React.FC = () => {
              itemDiscountType: 'none',
              itemDiscountValue: 0,
              unitPriceAfterDiscount: product.sellingPrice,
+             isFreeGift: false,
            };
            return [...prevCart, newCartItem];
         } else {
@@ -279,19 +340,19 @@ export const POSPage: React.FC = () => {
 
   const updateCartItemQuantity = (productId: string, change: number) => {
     setCart(prevCart => {
-      const itemToUpdate = prevCart.find(item => item.id === productId);
+      const itemToUpdate = prevCart.find(item => item.id === productId && !item.isFreeGift);
       if (!itemToUpdate) return prevCart;
       
       const newQuantity = itemToUpdate.quantityInCart + change;
 
       if (newQuantity <= 0) {
-        return prevCart.filter(item => item.id !== productId);
+        return prevCart.filter(item => item.id !== productId || item.isFreeGift);
       }
       if (newQuantity > itemToUpdate.stock) {
         Swal.fire({ title: t('notEnoughStock'), text: `${t('stockAvailable')}: ${itemToUpdate.stock}`, icon: 'warning', timer: 2000 });
         return prevCart;
       }
-      return prevCart.map(item => item.id === productId ? { ...item, quantityInCart: newQuantity } : item);
+      return prevCart.map(item => item.id === productId && !item.isFreeGift ? { ...item, quantityInCart: newQuantity } : item);
     });
   };
 
@@ -299,11 +360,11 @@ export const POSPage: React.FC = () => {
     setCart(prevCart => {
         const newQuantity = parseInt(value, 10);
         
-        const itemToUpdate = prevCart.find(item => item.id === productId);
+        const itemToUpdate = prevCart.find(item => item.id === productId && !item.isFreeGift);
         if (!itemToUpdate) return prevCart;
 
         if (value === '') {
-            return prevCart.map(item => item.id === productId ? { ...item, quantityInCart: 0 } : item);
+            return prevCart.map(item => item.id === productId && !item.isFreeGift ? { ...item, quantityInCart: 0 } : item);
         }
 
         if (isNaN(newQuantity) || newQuantity < 0) {
@@ -312,27 +373,27 @@ export const POSPage: React.FC = () => {
 
         if (newQuantity > itemToUpdate.stock) {
             Swal.fire({ title: t('notEnoughStock'), text: `${t('stockAvailable')}: ${itemToUpdate.stock}`, icon: 'warning', timer: 2000 });
-            return prevCart.map(item => item.id === productId ? { ...item, quantityInCart: itemToUpdate.stock } : item);
+            return prevCart.map(item => item.id === productId && !item.isFreeGift ? { ...item, quantityInCart: itemToUpdate.stock } : item);
         }
         
-        return prevCart.map(item => item.id === productId ? { ...item, quantityInCart: newQuantity } : item);
+        return prevCart.map(item => item.id === productId && !item.isFreeGift ? { ...item, quantityInCart: newQuantity } : item);
     });
   };
 
   const handleQuantityInputBlur = (productId: string) => {
     setCart(prevCart => {
-        const itemToUpdate = prevCart.find(item => item.id === productId);
+        const itemToUpdate = prevCart.find(item => item.id === productId && !item.isFreeGift);
         if (!itemToUpdate) return prevCart;
 
         if (itemToUpdate.quantityInCart <= 0) {
-            return prevCart.filter(item => item.id !== productId);
+            return prevCart.filter(item => item.id !== productId || item.isFreeGift);
         }
         return prevCart;
     });
   };
 
   const removeFromCart = (productId: string) => {
-    setCart(prevCart => prevCart.filter(item => item.id !== productId));
+    setCart(prevCart => prevCart.filter(item => item.id !== productId || item.isFreeGift));
   };
   
   const handleClearBill = () => {
@@ -389,11 +450,11 @@ export const POSPage: React.FC = () => {
 
     let promotionsApplied = false;
     const newCart = cart.map(cartItem => {
-        if (cartItem.appliedPromotionId) {
+        if (cartItem.appliedPromotionId || cartItem.isFreeGift) {
             return cartItem;
         }
 
-        const applicablePromotion = activePromotions.find(promo => promo.productIds.includes(cartItem.id));
+        const applicablePromotion = activePromotions.find(promo => promo.promotionType === 'discount' && promo.productIds.includes(cartItem.id));
 
         if (applicablePromotion) {
             promotionsApplied = true;
@@ -401,9 +462,9 @@ export const POSPage: React.FC = () => {
             let newPrice = originalPrice;
 
             if (applicablePromotion.discountType === 'percent') {
-                newPrice = originalPrice * (1 - applicablePromotion.discountValue / 100);
+                newPrice = originalPrice * (1 - (applicablePromotion.discountValue || 0) / 100);
             } else {
-                newPrice = originalPrice - applicablePromotion.discountValue;
+                newPrice = originalPrice - (applicablePromotion.discountValue || 0);
             }
 
             newPrice = Math.max(0, newPrice);
@@ -493,6 +554,7 @@ export const POSPage: React.FC = () => {
     setIsProcessingSale(true);
 
     const totalOriginalPrice = cart.reduce((acc, item) => {
+        if (item.isFreeGift) return acc;
         const originalItemPrice = item.originalUnitPriceBeforePromo ?? item.sellingPrice;
         return acc + (originalItemPrice * item.quantityInCart);
     }, 0);
@@ -508,6 +570,7 @@ export const POSPage: React.FC = () => {
         itemDiscountValue: item.appliedPromotionId ? 0 : item.itemDiscountValue,
         unitPriceAfterItemDiscount: item.activeUnitPrice,
         totalPrice: item.activeUnitPrice * item.quantityInCart,
+        isFreeGift: item.isFreeGift || false,
         ...(item.appliedPromotionId && { appliedPromotionId: item.appliedPromotionId }),
     }));
     
@@ -541,7 +604,10 @@ export const POSPage: React.FC = () => {
     };
     
     try {
-        const savedSale = await addSale(saleData);
+        const expenseCategoryText = t('sellingExpenseForPromo');
+        const expenseDescriptionTemplate = t('sellingExpenseForPromoDesc');
+        const sellingAccountingCategoryName = t('accountingCategory_selling');
+        const savedSale = await addSale(saleData, expenseCategoryText, expenseDescriptionTemplate, sellingAccountingCategoryName);
         
         handlePrintReceipt(savedSale);
         
@@ -566,6 +632,7 @@ export const POSPage: React.FC = () => {
   };
 
   const handleCartItemDoubleClick = (item: CartItem) => {
+    if (item.isFreeGift) return; // Cannot change price of free item
     if (
         (item.sellingPrice2 && item.sellingPrice2 > 0) ||
         (item.sellingPrice3 && item.sellingPrice3 > 0)
@@ -613,17 +680,24 @@ export const POSPage: React.FC = () => {
                     </thead>
                     <tbody>
                         {cart.map(item => (
-                            <tr key={item.id} className="border-t hover:bg-slate-50 cursor-pointer" onDoubleClick={() => handleCartItemDoubleClick(item)}>
+                            <tr key={item.id + (item.isFreeGift ? '-free' : '')} className={`border-t ${!item.isFreeGift && 'hover:bg-slate-50 cursor-pointer'}`} onDoubleClick={() => handleCartItemDoubleClick(item)}>
                                 <td className="p-2 font-semibold text-gray-800">
                                     {item.name}
-                                    {item.appliedPromotionId && (
+                                    {item.appliedPromotionId && !item.isFreeGift && (
                                         <div className="text-xs font-normal text-green-600 bg-green-100 px-1.5 py-0.5 rounded-full inline-block ml-2">
                                             {t('promotionApplied')}
+                                        </div>
+                                    )}
+                                    {item.isFreeGift && (
+                                        <div className="text-xs font-normal text-pink-600 bg-pink-100 px-1.5 py-0.5 rounded-full inline-block ml-2">
+                                            {t('freeGiftLabel')}
                                         </div>
                                     )}
                                 </td>
                                 <td className="p-2">
                                     <div className="flex items-center justify-center gap-1">
+                                        {!item.isFreeGift ? (
+                                        <>
                                         <button type="button" onClick={() => updateCartItemQuantity(item.id, -1)} className="w-7 h-7 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-800 flex items-center justify-center transition focus:outline-none focus:ring-2 focus:ring-purple-400">
                                             <MinusIcon />
                                         </button>
@@ -637,10 +711,14 @@ export const POSPage: React.FC = () => {
                                         <button type="button" onClick={() => updateCartItemQuantity(item.id, 1)} className="w-7 h-7 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-800 flex items-center justify-center transition focus:outline-none focus:ring-2 focus:ring-purple-400">
                                             <PlusIcon />
                                         </button>
+                                        </>
+                                        ) : (
+                                            <span className="font-medium">{item.quantityInCart}</span>
+                                        )}
                                     </div>
                                 </td>
                                 <td className="p-2 text-right text-gray-600">
-                                    {item.appliedPromotionId && item.originalUnitPriceBeforePromo != null && (
+                                    {item.appliedPromotionId && item.originalUnitPriceBeforePromo != null && !item.isFreeGift && (
                                         <span className="line-through text-red-500 mr-1">
                                             {formatCurrency(item.originalUnitPriceBeforePromo)}
                                         </span>
@@ -649,7 +727,7 @@ export const POSPage: React.FC = () => {
                                 </td>
                                 <td className="p-2 text-right font-semibold text-gray-800">{formatCurrency(item.activeUnitPrice * item.quantityInCart)}</td>
                                 <td className="p-2 text-center">
-                                    <Button onClick={() => removeFromCart(item.id)} size="sm" variant="ghost" className="text-red-500 hover:bg-red-100 p-1"><TrashIcon/></Button>
+                                    {!item.isFreeGift && <Button onClick={() => removeFromCart(item.id)} size="sm" variant="ghost" className="text-red-500 hover:bg-red-100 p-1"><TrashIcon/></Button>}
                                 </td>
                             </tr>
                         ))}

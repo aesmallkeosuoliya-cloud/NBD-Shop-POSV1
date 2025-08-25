@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Promotion, Product } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -132,10 +133,15 @@ const PromotionsPage: React.FC = () => {
   };
 
   const getDiscountDisplay = (promo: Promotion): string => {
-    if (promo.discountType === 'fixed') {
-        return `${formatCurrency(promo.discountValue)} ${currencySymbol}`;
+    if (promo.promotionType === 'free_product') {
+        const freeProduct = productMap.get(promo.freeProductId || '');
+        return `${t('quantityToBuy')}: ${promo.quantityToBuy}, ${t('selectFreeProduct')}: ${freeProduct}, ${t('quantityToGetFree')}: ${promo.quantityToGetFree}`;
     }
-    return `${promo.discountValue}%`;
+    // else it's 'discount'
+    if (promo.discountType === 'fixed') {
+        return `${formatCurrency(promo.discountValue || 0)} ${currencySymbol}`;
+    }
+    return `${promo.discountValue || 0}%`;
   };
   
   const formatDate = (isoDate: string) => {
@@ -164,9 +170,8 @@ const PromotionsPage: React.FC = () => {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('promotionName')}</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('participatingProducts')}</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('discount')}</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('startDate')}</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('stopDate')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('details')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('date')}</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">{t('status')}</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('actions')}</th>
               </tr>
@@ -177,8 +182,7 @@ const PromotionsPage: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{promo.name}</td>
                   <td className="px-6 py-4 whitespace-normal text-xs text-gray-500 max-w-xs truncate" title={getParticipatingProductNames(promo.productIds)}>{getParticipatingProductNames(promo.productIds)}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{getDiscountDisplay(promo)}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(promo.startDate)}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(promo.endDate)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{`${formatDate(promo.startDate)} - ${formatDate(promo.endDate)}`}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${promo.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                       {promo.status === 'active' ? t('promotionStatusActive') : t('promotionStatusInactive')}

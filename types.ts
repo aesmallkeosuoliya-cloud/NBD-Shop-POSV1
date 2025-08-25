@@ -105,6 +105,7 @@ export interface CartItem extends Product {
   unitPriceAfterDiscount: number; // Selling price after item-specific discount
   appliedPromotionId?: string; // ID of the promotion applied
   originalUnitPriceBeforePromo?: number; // Original sellingPrice before promotion
+  isFreeGift?: boolean; // New flag for free promotional items
 }
 
 export interface SaleTransactionItem {
@@ -117,6 +118,7 @@ export interface SaleTransactionItem {
   unitPriceAfterItemDiscount: number; // Price after item-specific discount (or promotional price)
   totalPrice: number; // quantity * unitPriceAfterItemDiscount
   appliedPromotionId?: string; // Store which promotion was applied
+  isFreeGift?: boolean; // New flag for free promotional items
 }
 
 export interface Sale {
@@ -341,13 +343,23 @@ export interface StoreSettings {
 // Promotion Types
 export type PromotionStatus = 'active' | 'inactive';
 export type PromotionDiscountType = 'fixed' | 'percent';
+export type PromotionType = 'discount' | 'free_product';
 
 export interface Promotion {
   id: string;
   name: string;
-  productIds: string[]; // Array of product IDs
-  discountType: PromotionDiscountType;
-  discountValue: number; // Amount for fixed, percentage for percent
+  promotionType: PromotionType;
+  productIds: string[]; // For 'discount': products getting discount. For 'free_product': the main products to buy.
+  
+  // Fields for 'discount' type
+  discountType?: PromotionDiscountType;
+  discountValue?: number;
+
+  // Fields for 'free_product' type
+  freeProductId?: string;
+  quantityToBuy?: number;
+  quantityToGetFree?: number;
+  
   startDate: string; // ISO Date string
   endDate: string; // ISO Date string
   status: PromotionStatus;
