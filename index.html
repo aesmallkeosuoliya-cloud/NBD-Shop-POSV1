@@ -53,7 +53,11 @@
     }
     
     /* Hide print areas on screen by default */
-    #barcode-print-area-wrapper, #po-print-area-wrapper, #stock-movement-print-area-wrapper, #receipt-print-area-wrapper {
+    #barcode-print-area-wrapper, 
+    #po-print-area-wrapper, 
+    #stock-movement-print-area-wrapper, 
+    #receipt-print-area-wrapper,
+    #ap-print-area-wrapper {
         display: none;
     }
 
@@ -125,6 +129,19 @@
     .stock-movement-print-table th { background-color: #f2f2f2; font-weight: bold; }
     .stock-movement-print-footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #333; font-size: 9pt; text-align: center; }
 
+    /* AP Aging Report Print Styles */
+    .ap-print-container { color: #000; background: #fff; font-size: 9pt; padding: 5mm; }
+    .ap-print-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 8px; margin-bottom: 8px; }
+    .ap-print-header .logo-container { flex-shrink: 0; }
+    .ap-print-header .title-container { flex-grow: 1; text-align: center; }
+    .ap-print-header .date-container { flex-shrink: 0; text-align: right; font-size: 8pt; }
+    .ap-print-header .title-container h1 { font-size: 16pt; font-weight: bold; margin: 0; }
+    .ap-print-supplier-info { margin-bottom: 15px; border-top: 1px solid #333; border-bottom: 1px solid #333; padding: 5px 0; }
+    .ap-print-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 8pt; }
+    .ap-print-table th, .ap-print-table td { border: 1px solid #ccc; padding: 4px; text-align: left; vertical-align: top; }
+    .ap-print-table th { background-color: #f2f2f2; font-weight: bold; }
+    .ap-print-table tfoot td { font-weight: bold; border-top: 2px solid #333; }
+
 
     /* General print styles */
     @media print {
@@ -155,7 +172,8 @@
       body.printing-barcodes #root,
       body.printing-po #root,
       body.printing-stock-movement #root,
-      body.printing-receipt #root {
+      body.printing-receipt #root,
+      body.printing-ap-report #root {
         display: none;
       }
 
@@ -165,7 +183,8 @@
       body.printing-barcodes #barcode-print-area-wrapper,
       body.printing-po #po-print-area-wrapper,
       body.printing-stock-movement #stock-movement-print-area-wrapper,
-      body.printing-receipt #receipt-print-area-wrapper {
+      body.printing-receipt #receipt-print-area-wrapper,
+      body.printing-ap-report #ap-print-area-wrapper {
         display: block !important;
       }
 
@@ -183,6 +202,7 @@
   <div id="po-print-area-wrapper"></div>
   <div id="stock-movement-print-area-wrapper"></div>
   <div id="receipt-print-area-wrapper"></div>
+  <div id="ap-print-area-wrapper"></div>
   <script type="module" src="./index.tsx" defer></script>
 </body>
 </html>

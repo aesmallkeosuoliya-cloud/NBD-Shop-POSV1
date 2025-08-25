@@ -863,6 +863,8 @@ const translations: Record<Language, Translations> = {
     creditDaysColumn: 'ເຄດິດ (ວັນ)',
     balanceAmount: 'ຍອດຄົງຄ້າງ',
     printReport: 'ພິມລາຍງານ',
+    buyId: 'Buy ID',
+    supplierHeader: 'ເຈົ້າໜີ້ (Supplier)',
 
 
     // Language Switch
@@ -1150,6 +1152,9 @@ const translations: Record<Language, Translations> = {
     barcodeHeight: 'ความสูงบาร์โค้ด',
     barcodeWidth: 'ความหนาแน่นบาร์โค้ด',
     fontSizeStore: 'ขนาดฟอนต์ชื่อร้าน',
+    apAgingReport: 'รายงานเจ้าหนี้ค้างชำระ',
+    supplierHeader: 'เจ้าหนี้ (Supplier)',
+    buyId: 'Buy ID'
   }
 };
 
