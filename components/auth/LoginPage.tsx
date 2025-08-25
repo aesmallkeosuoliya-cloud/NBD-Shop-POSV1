@@ -38,7 +38,7 @@ const LoginPage: React.FC = () => {
     } catch (err: any) {
       console.error("Login failed:", err);
       const message = err.message === 'invalid_credentials' 
-          ? t('invalidUsernameOrPassword') 
+          ? t('invalidEmailOrPassword') 
           : t('loginFailed');
 
       setError(message);

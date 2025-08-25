@@ -61,11 +61,16 @@ const translations: Record<Language, Translations> = {
     logout: 'ອອກຈາກລະບົບ',
     email: 'ອີເມວ',
     password: 'ລະຫັດຜ່ານ',
+    usernameOrEmail: 'ຊື່ຜູ້ໃຊ້ ຫຼື ອີເມວ',
+    invalidUsernameOrPassword: 'ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ',
     loginSuccessful: 'ເຂົ້າສູ່ລະບົບສຳເລັດ',
     loginFailed: 'ການເຂົ້າສູ່ລະບົບລົ້ມເຫລວ',
     invalidEmailOrPassword: 'ອີເມວ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ',
     authCredentialError: 'ການຢັ້ງຢືນຕົວຕົນລົ້ມເຫຼວ. ກະລຸນາກວດສອບວ່າ API Key ຖືກຕ້ອງ ແລະການຕັ້ງຄ່າ Firebase ຖືກກຳນົດຢ່າງເໝາະສົມ, ຫຼືລອງใหม่อีกครั้งภายหลัง.',
     user: 'ຜູ້ໃຊ້',
+    passwordTooShort: 'ລະຫັດຜ່ານຕ້ອງມີຢ່າງໜ້ອຍ 4 ຕົວອັກສອນ',
+    passwordsDoNotMatch: 'ລະຫັດຜ່ານບໍ່ຕົງກັນ',
+    leaveBlankToKeepPassword: 'ປະໄວ້ຫວ່າງເພື່ອຮັກສາລະຫັດຜ່ານເກົ່າ',
 
     // Sidebar / Navigation
     dashboard: 'ແດຊບອດ',
@@ -903,6 +908,21 @@ const translations: Record<Language, Translations> = {
     english: 'English',
     deleted: 'ລົບແລ້ວ',
     items: 'ລາຍການ',
+    
+    // User Management
+    userManagement: 'ຈັດການຜູ້ໃຊ້',
+    addNewUser: 'ເພີ່ມຜູ້ໃຊ້ໃໝ່',
+    editUser: 'ແກ້ໄຂຜູ້ໃຊ້',
+    role: 'ບົດບາດ',
+    role_admin: 'ແອັດມິນ',
+    role_manager: 'ຜູ້ຈັດການ',
+    role_sales: 'ພະນັກງານຂາຍ',
+    role_purchasing: 'ພະນັກງານຈັດຊື້',
+    role_gr: 'ພະນັກງານຮັບສິນຄ້າ',
+    cannotDeleteSelf: 'ບໍ່ສາມາດລົບຜູ້ໃຊ້ຂອງຕົນເອງໄດ້',
+    loginAlreadyExists: 'ຊື່ຜູ້ໃຊ้นี้มีอยู่แล้ว',
+    allRoles: 'ທຸກບົດບາດ',
+    confirmPassword: 'ຢືນຢັນລະຫັດຜ່ານ',
   },
   th: {
     // General
@@ -961,11 +981,16 @@ const translations: Record<Language, Translations> = {
     logout: 'ออกจากระบบ',
     email: 'อีเมล',
     password: 'รหัสผ่าน',
+    usernameOrEmail: 'ชื่อผู้ใช้หรืออีเมล',
+    invalidUsernameOrPassword: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',
     loginSuccessful: 'เข้าสู่ระบบสำเร็จ',
     loginFailed: 'การเข้าสู่ระบบล้มเหลว',
     invalidEmailOrPassword: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
     authCredentialError: 'การยืนยันตัวตนล้มเหลว โปรดตรวจสอบว่า API Key ถูกต้องและการตั้งค่า Firebase ถูกกำหนดอย่างเหมาะสม หรือลองใหม่อีกครั้งภายหลัง',
     user: 'ผู้ใช้',
+    passwordTooShort: 'รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร',
+    passwordsDoNotMatch: 'รหัสผ่านไม่ตรงกัน',
+    leaveBlankToKeepPassword: 'เว้นว่างไว้เพื่อใช้รหัสผ่านเดิม',
 
     // Sidebar / Navigation
     dashboard: 'แดชบอร์ด',
@@ -1200,9 +1225,27 @@ const translations: Record<Language, Translations> = {
     barcodeHeight: 'ความสูงบาร์โค้ด',
     barcodeWidth: 'ความหนาแน่นบาร์โค้ด',
     fontSizeStore: 'ขนาดฟอนต์ชื่อร้าน',
+    paymentMethod: 'วิธีการชำระเงิน',
+    paymentMethodCredit: 'เครดิต',
+    paymentMethodCash: 'เงินสด',
+    paymentMethodTransfer: 'โอนเงิน',
     apAgingReport: 'รายงานเจ้าหนี้ค้างชำระ',
     supplierHeader: 'เจ้าหนี้ (Supplier)',
-    buyId: 'Buy ID'
+    buyId: 'Buy ID',
+    // User Management
+    userManagement: 'จัดการผู้ใช้',
+    addNewUser: 'เพิ่มผู้ใช้ใหม่',
+    editUser: 'แก้ไขผู้ใช้',
+    role: 'บทบาท',
+    role_admin: 'แอดมิน',
+    role_manager: 'ผู้จัดการ',
+    role_sales: 'พนักงานขาย',
+    role_purchasing: 'พนักงานจัดซื้อ',
+    role_gr: 'พนักงานรับสินค้า',
+    cannotDeleteSelf: 'ไม่สามารถลบผู้ใช้ของตัวเองได้',
+    loginAlreadyExists: 'ชื่อผู้ใช้นี้มีอยู่แล้ว',
+    allRoles: 'ทุกบทบาท',
+    confirmPassword: 'ยืนยันรหัสผ่าน',
   }
 };
 
