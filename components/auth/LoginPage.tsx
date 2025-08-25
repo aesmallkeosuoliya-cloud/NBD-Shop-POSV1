@@ -14,7 +14,7 @@ const LoginPage: React.FC = () => {
   const { login } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const [loginField, setLoginField] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -24,8 +24,8 @@ const LoginPage: React.FC = () => {
     setError('');
     setIsLoading(true);
     try {
-      await login(email, password);
-      // AuthProvider will update currentUser, and App.tsx will navigate
+      await login(loginField, password);
+      // AuthProvider handles navigation on successful login
       Swal.fire({
         icon: 'success',
         title: t('loginSuccessful'),
@@ -36,35 +36,16 @@ const LoginPage: React.FC = () => {
         timerProgressBar: true,
       });
     } catch (err: any) {
-      console.error("Login failed:", err); 
-      
-      let userFacingMessageKey = 'loginFailed'; // Default message for UI text
+      console.error("Login failed:", err);
+      const message = err.message === 'invalid_credentials' 
+          ? t('invalidUsernameOrPassword') 
+          : t('loginFailed');
 
-      if (err.code) {
-        switch (err.code) {
-          case 'auth/api-key-not-valid':
-          case 'auth/invalid-credential':
-            userFacingMessageKey = 'authCredentialError'; 
-            break;
-          case 'auth/user-not-found':
-          case 'auth/wrong-password':
-            userFacingMessageKey = 'invalidEmailOrPassword';
-            break;
-          default:
-            console.warn(`Unhandled Firebase Auth error code: ${err.code}`);
-        }
-      } else {
-        // Non-Firebase error or error object without a 'code'
-        console.warn("Login error without a Firebase error code:", err);
-      }
-      
-      const translatedErrorMessage = t(userFacingMessageKey);
-      setError(translatedErrorMessage); // Update <p> tag on page
-      
+      setError(message);
       Swal.fire({
         icon: 'error',
-        title: t('loginFailed'), // General title "Login Failed"
-        text: translatedErrorMessage, // Specific user-facing message
+        title: t('loginFailed'),
+        text: message,
       });
     } finally {
       setIsLoading(false);
@@ -85,15 +66,15 @@ const LoginPage: React.FC = () => {
         
         <form onSubmit={handleSubmit} className="space-y-6">
           <Input
-            label={t('email')}
-            type="email"
-            name="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            label={t('usernameOrEmail')}
+            type="text"
+            name="loginField"
+            id="loginField"
+            value={loginField}
+            onChange={(e) => setLoginField(e.target.value)}
             required
-            autoComplete="email"
-            placeholder="your@email.com"
+            autoComplete="username"
+            placeholder="username / your@email.com"
           />
           <Input
             label={t('password')}

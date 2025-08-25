@@ -4,7 +4,7 @@
 // In a typical bundled React app, you'd import from 'firebase/app' and 'firebase/database'.
 
 import { FIREBASE_CONFIG, EXPENSE_CATEGORIES, UI_COLORS, VAT_RATE } from '../constants'; 
-import { Product, Sale, Purchase, Expense, Supplier, DashboardData, SaleTransactionItem, ProductMovementLogType, ProductMovementLog, FirebaseUser, Customer, SalePayment, StoreSettings, PurchaseOrder, PurchaseOrderItem, Promotion, ExchangeRates } from '../types'; 
+import { Product, Sale, Purchase, Expense, Supplier, DashboardData, SaleTransactionItem, ProductMovementLogType, ProductMovementLog, FirebaseUser, Customer, SalePayment, StoreSettings, PurchaseOrder, PurchaseOrderItem, Promotion, ExchangeRates, InternalUser, AuditLog } from '../types'; 
 
 
 // Declare Firebase types if not automatically available from global scope.
@@ -134,6 +134,87 @@ export const onAuthStateChangedListener = (callback: (user: FirebaseUser | null)
   });
 };
 
+// --- Audit Log Service ---
+export const addAuditLog = async (logData: Omit<AuditLog, 'id' | 'timestamp'>): Promise<string> => {
+  const newLogRef = getRef('auditLogs').push();
+  const logId = newLogRef.key;
+  if (!logId) throw new Error("Failed to generate audit log ID");
+
+  const fullLog: AuditLog = {
+    ...logData,
+    id: logId,
+    timestamp: new Date().toISOString(),
+  };
+
+  await newLogRef.set(fullLog);
+  return logId;
+};
+
+// --- Internal User System ---
+const encodePass = (pass: string) => btoa(pass);
+
+export const getInternalUsers = async (): Promise<InternalUser[]> => {
+  const snapshot = await getRef('internalUsers').get();
+  if (snapshot.exists()) {
+    const data = snapshot.val();
+    return Object.keys(data).map(key => ({ id: key, ...data[key] }));
+  }
+  return [];
+};
+
+export const findUserByLogin = async (login: string, pass: string): Promise<InternalUser | null> => {
+    const users = await getInternalUsers();
+    const user = users.find(u => u.login.toLowerCase() === login.toLowerCase());
+    if (user && user.passwordHash === encodePass(pass)) {
+      return user;
+    }
+    return null;
+};
+
+export const reauthenticateUser = async (login: string, pass: string): Promise<boolean> => {
+    const user = await findUserByLogin(login, pass);
+    return !!user;
+};
+
+export const addInternalUser = async (userData: Partial<InternalUser>, password: string, actorId?: string, actorLogin?: string): Promise<string> => {
+    const users = await getInternalUsers();
+    if (users.some(u => u.login.toLowerCase() === userData.login?.toLowerCase())) {
+        throw new Error('login_exists');
+    }
+    const userId = await pushData<InternalUser>('internalUsers', {
+        login: userData.login!,
+        passwordHash: encodePass(password),
+        role: userData.role || 'sales',
+    });
+    if(actorId && actorLogin) {
+        addAuditLog({ userId: actorId, userLogin: actorLogin, action: 'create_user', targetId: userId, details: `Created user ${userData.login} with role ${userData.role}`});
+    }
+    return userId;
+};
+
+export const updateInternalUser = async (userData: InternalUser, password?: string, actorId?: string, actorLogin?: string): Promise<void> => {
+    const dataToUpdate: any = {
+        login: userData.login,
+        role: userData.role,
+    };
+    if (password) {
+        dataToUpdate.passwordHash = encodePass(password);
+    }
+    await updateData<InternalUser>(`internalUsers/${userData.id}`, dataToUpdate);
+    if(actorId && actorLogin) {
+        addAuditLog({ userId: actorId, userLogin: actorLogin, action: 'update_user', targetId: userData.id, details: `Updated user ${userData.login}. Role: ${userData.role}. Password changed: ${password ? 'Yes' : 'No'}` });
+    }
+};
+
+export const deleteInternalUser = async (id: string, actorId: string, actorLogin: string): Promise<void> => {
+    const userSnapshot = await getRef(`internalUsers/${id}`).get();
+    if (userSnapshot.exists()) {
+        const userToDelete = userSnapshot.val();
+        await getRef(`internalUsers/${id}`).remove();
+        addAuditLog({ userId: actorId, userLogin: actorLogin, action: 'delete_user', targetId: id, details: `Deleted user ${userToDelete.login}` });
+    }
+};
+
 
 // --- Product Movement Log Service ---
 const addProductMovementLogEntry = async (
@@ -150,7 +231,6 @@ const addProductMovementLogEntry = async (
     id: logId,
     productId: productId,
     timestamp: new Date().toISOString(), // Use current server time for log entry
-    userId: auth?.currentUser?.uid // Add current user ID if available
   };
 
   if (updatesObject) {
@@ -174,7 +254,7 @@ export const getProductMovementLogs = async (productId: string): Promise<Product
 
 
 // --- Product Service ---
-export const addProduct = async (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt' | 'profitPerUnit'>): Promise<string> => {
+export const addProduct = async (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt' | 'profitPerUnit'>, userId: string, userLogin: string): Promise<string> => {
   const profitPerUnit = productData.sellingPrice - productData.costPrice;
   const timestamp = new Date().toISOString();
   
@@ -200,14 +280,16 @@ export const addProduct = async (productData: Omit<Product, 'id' | 'createdAt' |
       quantityChange: productData.stock,
       stockBefore: 0,
       stockAfter: productData.stock,
-      costPriceAfter: productData.costPrice, // Assuming cost price is set at creation
-      sellingPriceAfter: productData.sellingPrice, // Assuming selling price is set
+      costPriceAfter: productData.costPrice,
+      sellingPriceAfter: productData.sellingPrice,
       notes: "Initial stock added during product creation", 
-      relatedDocumentId: productId, // Link to the product itself
+      relatedDocumentId: productId,
+      userId,
     }, updates);
   }
   
   await db.ref('/').update(updates);
+  addAuditLog({ userId, userLogin, action: 'create_product', targetId: productId, details: `Created product ${productData.name}` });
   return productId;
 };
 
@@ -362,7 +444,7 @@ export const getProductById = async (id: string): Promise<Product | null> => {
     return snapshot.exists() ? { id, ...snapshot.val() } : null;
 };
 
-export const updateProduct = async (id: string, productData: Partial<Omit<Product, 'id' | 'createdAt' | 'updatedAt'>>): Promise<void> => {
+export const updateProduct = async (id: string, productData: Partial<Omit<Product, 'id' | 'createdAt' | 'updatedAt'>>, userId: string, userLogin: string): Promise<void> => {
   const currentProduct = await getProductById(id);
   if (!currentProduct) throw new Error(`Product with ID ${id} not found.`);
 
@@ -403,17 +485,15 @@ export const updateProduct = async (id: string, productData: Partial<Omit<Produc
       sellingPriceBefore: currentProduct.sellingPrice,
       sellingPriceAfter: newSellingPrice, 
       notes: logNote,
-      relatedDocumentId: 'manual_update', 
+      relatedDocumentId: 'manual_update',
+      userId,
   }, updates); 
   
   await db.ref('/').update(updates); 
+  addAuditLog({ userId, userLogin, action: 'update_product', targetId: id, details: `Updated product ${productData.name || currentProduct.name}` });
 };
 
-export const deleteProduct = async (id: string): Promise<void> => {
-  await getRef(`products/${id}`).remove();
-};
-
-export const deleteMultipleProducts = async (productIds: string[]): Promise<void> => {
+export const deleteMultipleProducts = async (productIds: string[], userId: string, userLogin: string): Promise<void> => {
   const updates: { [key: string]: null } = {};
   productIds.forEach(id => {
     updates[`products/${id}`] = null;
@@ -421,10 +501,11 @@ export const deleteMultipleProducts = async (productIds: string[]): Promise<void
   });
   if (Object.keys(updates).length > 0) {
     await db.ref('/').update(updates);
+    addAuditLog({ userId, userLogin, action: 'delete_multiple_products', details: `Deleted ${productIds.length} products.` });
   }
 };
 
-export const updateMultipleProductsStatus = async (productIds: string[], newStatus: boolean): Promise<void> => {
+export const updateMultipleProductsStatus = async (productIds: string[], newStatus: boolean, userId: string, userLogin: string): Promise<void> => {
   const updates: { [key: string]: any } = {};
   const timestamp = new Date().toISOString();
 
@@ -444,12 +525,14 @@ export const updateMultipleProductsStatus = async (productIds: string[], newStat
           stockAfter: currentProduct.stock, 
           notes: newStatus ? 'Product activated via bulk action' : 'Product deactivated via bulk action',
           relatedDocumentId: 'manual_batch_update',
+          userId,
       }, updates);
     }
   }
 
   if (Object.keys(updates).length > 0) {
     await db.ref('/').update(updates);
+    addAuditLog({ userId, userLogin, action: 'update_multiple_products_status', details: `${newStatus ? 'Activated' : 'Deactivated'} ${productIds.length} products.` });
   }
 };
 
@@ -483,7 +566,9 @@ export const addSale = async (
     saleData: Omit<Sale, 'id' | 'receiptNumber'>,
     expenseCategoryText: string,
     expenseDescriptionTemplate: string,
-    sellingAccountingCategoryName: string
+    sellingAccountingCategoryName: string,
+    userId: string,
+    userLogin: string
 ): Promise<Sale> => {
   const saleTimestamp = new Date(saleData.transactionDate).toISOString(); 
   const currentProcessingTimestamp = new Date().toISOString(); // For customer updatedAt
@@ -524,7 +609,8 @@ export const addSale = async (
         sellingPriceBefore: currentProduct.sellingPrice, 
         sellingPriceAfter: item.unitPriceAfterItemDiscount, 
         relatedDocumentId: `temp_sale_id_placeholder`, 
-        notes: `Sold: ${item.productName} (Qty: ${item.quantity}) Receipt: ${receiptNumber.slice(-12)}`, 
+        notes: `Sold: ${item.productName} (Qty: ${item.quantity}) Receipt: ${receiptNumber.slice(-12)}`,
+        userId,
     }, updates);
   }
 
@@ -566,6 +652,7 @@ export const addSale = async (
           relatedPurchaseId: saleId, // Link expense to this sale document for tracking
           accountingCategoryCode: 2, // 2: Selling Expense
           accountingCategoryName: sellingAccountingCategoryName,
+          userId,
       };
       const newExpenseRef = getRef('expenses').push();
       const expenseId = newExpenseRef.key;
@@ -583,6 +670,7 @@ export const addSale = async (
   updates[`sales/${saleId}`] = cleanUndefinedProps(fullSaleData); 
   
   await db.ref('/').update(updates); 
+  addAuditLog({ userId, userLogin, action: 'create_sale', targetId: saleId, details: `Created sale ${receiptNumber} for ${saleData.customerName}` });
   return fullSaleData;
 };
 
@@ -690,7 +778,9 @@ export const addPurchaseAndProcess = async (
   purchaseInput: Omit<Purchase, 'id' | 'createdAt' | 'updatedAt'>,
   expenseCategoryText: string, 
   expenseDescriptionTemplate: string,
-  costAccountingCategoryName: string
+  costAccountingCategoryName: string,
+  userId: string,
+  userLogin: string
 ): Promise<string> => {
   const newPurchaseRef = getRef('purchases').push(); // This is a Stock-In document
   const purchaseId = newPurchaseRef.key;
@@ -734,6 +824,7 @@ export const addPurchaseAndProcess = async (
         sellingPriceAfter: item.calculatedSellingPrice,
         relatedDocumentId: purchaseId, // Link to this stock-in document
         notes: `Stock-in via ${purchaseInput.purchaseOrderNumber ? 'Ref ' + purchaseInput.purchaseOrderNumber : 'ID ' + purchaseId.substring(purchaseId.length-6)}${purchaseInput.relatedPoId ? ` (PO: ${purchaseInput.relatedPoId.substring(purchaseInput.relatedPoId.length-6)})` : ''}`, 
+        userId,
     }, updates);
   }
   
@@ -748,6 +839,7 @@ export const addPurchaseAndProcess = async (
     relatedPurchaseId: purchaseId, // Link expense to this stock-in document
     accountingCategoryCode: 1, // Hardcoded to 1 for Cost
     accountingCategoryName: costAccountingCategoryName,
+    userId,
   };
   const newExpenseRef = getRef('expenses').push();
   const expenseId = newExpenseRef.key;
@@ -792,6 +884,7 @@ export const addPurchaseAndProcess = async (
 
 
   await db.ref('/').update(updates);
+  addAuditLog({ userId, userLogin, action: 'create_purchase', targetId: purchaseId, details: `Created purchase ${purchaseInput.purchaseOrderNumber || purchaseId}` });
   return purchaseId;
 };
 
@@ -855,6 +948,7 @@ export const deletePurchaseAndAssociatedRecords = async (purchaseId: string, log
         sellingPriceAfter: currentProduct.sellingPrice, 
         relatedDocumentId: purchaseId,
         notes: filledLogNote,
+        userId: purchaseToDelete.userId,
       }, updates);
     }
   }
@@ -904,7 +998,7 @@ export const deletePurchaseAndAssociatedRecords = async (purchaseId: string, log
 
 
 // --- Expense Service ---
-export const addExpense = async (expenseData: Omit<Expense, 'id' | 'createdAt'>): Promise<string> => {
+export const addExpense = async (expenseData: Omit<Expense, 'id' | 'createdAt'>, userId: string, userLogin: string): Promise<string> => {
   const expenseTimestamp = new Date(expenseData.date).toISOString(); 
   const cleanedExpenseData = cleanUndefinedProps(expenseData);
   const fullExpenseData = {
@@ -917,6 +1011,7 @@ export const addExpense = async (expenseData: Omit<Expense, 'id' | 'createdAt'>)
     throw new Error("Failed to get key for new expense record");
   }
   await newRecordRef.set({ ...fullExpenseData, id: expenseId });
+  addAuditLog({ userId, userLogin, action: 'create_expense', targetId: expenseId, details: `Created expense: ${expenseData.description} for ${expenseData.amount}` });
   return expenseId;
 };
 
@@ -930,13 +1025,17 @@ export const getExpenses = async (): Promise<Expense[]> => {
   return [];
 };
 
-export const updateExpense = async (id: string, expenseData: Partial<Omit<Expense, 'id' | 'createdAt'>>): Promise<void> => {
+export const updateExpense = async (id: string, expenseData: Partial<Omit<Expense, 'id' | 'createdAt'>>, userId: string, userLogin: string): Promise<void> => {
   await getRef(`expenses/${id}`).update(cleanUndefinedProps(expenseData));
+  addAuditLog({ userId, userLogin, action: 'update_expense', targetId: id, details: `Updated expense: ${expenseData.description}` });
 };
 
 
-export const deleteExpense = async (id: string): Promise<void> => {
-  return getRef(`expenses/${id}`).remove();
+export const deleteExpense = async (id: string, userId: string, userLogin: string): Promise<void> => {
+  const expenseSnapshot = await getRef(`expenses/${id}`).get();
+  const desc = expenseSnapshot.exists() ? expenseSnapshot.val().description : 'N/A';
+  await getRef(`expenses/${id}`).remove();
+  addAuditLog({ userId, userLogin, action: 'delete_expense', targetId: id, details: `Deleted expense: ${desc}` });
 };
 
 
@@ -1172,15 +1271,6 @@ export const saveExchangeRates = async (rates: Omit<ExchangeRates, 'updatedAt'>)
 };
 
 // --- Data Reset Service ---
-export const reauthenticateUser = async (email: string, pass: string): Promise<void> => {
-  if (!auth || !auth.currentUser) {
-    throw new Error("User not authenticated.");
-  }
-  const user = auth.currentUser;
-  const credential = window.firebase.auth.EmailAuthProvider.credential(email, pass);
-  await user.reauthenticateWithCredential(credential);
-};
-
 export const clearAllSalesAndPayments = async (): Promise<void> => {
   const updates: { [key: string]: null } = {
     'sales': null,

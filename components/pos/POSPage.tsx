@@ -1,9 +1,9 @@
 
-
 import React, { useState, useEffect, useCallback, useMemo, ChangeEvent, useRef } from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import { Product, CartItem, Sale, SaleTransactionItem, Customer, StoreSettings, Language, Promotion, ExchangeRates } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { getProducts, addSale, isFirebaseInitialized, getCustomers, addCustomer, getStoreSettings, getActivePromotions, getExchangeRates } from '../../services/firebaseService';
 import Input from '../common/Input';
 import Button from '../common/Button';
@@ -126,6 +126,7 @@ const PrintableReceipt: React.FC<{
 
 export const POSPage: React.FC = () => {
   const { t, language } = useLanguage();
+  const { currentUser } = useAuth();
   
   const [allProductsDB, setAllProductsDB] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -551,6 +552,10 @@ export const POSPage: React.FC = () => {
   }, [storeSettings, t, formatCurrency, editableVatRate, exchangeRates]);
   
   const handleProcessSale = async () => {
+    if (!currentUser) {
+        Swal.fire(t('error'), 'Current user not found.', 'error');
+        return;
+    }
     setIsProcessingSale(true);
 
     const totalOriginalPrice = cart.reduce((acc, item) => {
@@ -580,6 +585,8 @@ export const POSPage: React.FC = () => {
         customerName: selectedCustomerDetails?.name || t('walkInCustomer'),
         customerType: selectedCustomerDetails?.customerType || 'cash',
         transactionDate: new Date().toISOString(),
+        userId: currentUser.id,
+        salespersonName: currentUser.login,
         totalCartOriginalPrice: totalOriginalPrice,
         totalCartItemDiscountAmount: totalItemDiscount,
         subtotalAfterItemDiscounts: currentSubtotal,
@@ -607,7 +614,7 @@ export const POSPage: React.FC = () => {
         const expenseCategoryText = t('sellingExpenseForPromo');
         const expenseDescriptionTemplate = t('sellingExpenseForPromoDesc');
         const sellingAccountingCategoryName = t('accountingCategory_selling');
-        const savedSale = await addSale(saleData, expenseCategoryText, expenseDescriptionTemplate, sellingAccountingCategoryName);
+        const savedSale = await addSale(saleData, expenseCategoryText, expenseDescriptionTemplate, sellingAccountingCategoryName, currentUser.id, currentUser.login);
         
         handlePrintReceipt(savedSale);
         

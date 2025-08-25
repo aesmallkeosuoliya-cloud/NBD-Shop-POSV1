@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Expense, Supplier } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
 import ExpenseForm from './ExpenseForm';
@@ -27,6 +28,7 @@ const formatCurrency = (value: number | null | undefined) => {
 
 const ExpensesPage: React.FC = () => {
   const { t } = useLanguage();
+  const { currentUser } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [supplierMap, setSupplierMap] = useState<Record<string, string>>({});
@@ -116,7 +118,7 @@ const ExpensesPage: React.FC = () => {
     if (result.isConfirmed) {
       setFormLoading(true); // Use formLoading or a specific deleteLoading state
       try {
-        await deleteExpense(expense.id);
+        await deleteExpense(expense.id, currentUser!.id, currentUser!.login);
         Swal.fire(t('deleted'), t('deleteSuccess'), 'success');
         fetchExpensesAndSuppliers(); 
       } catch (error) {
@@ -131,10 +133,11 @@ const ExpensesPage: React.FC = () => {
   const handleSubmitForm = async (expenseData: Omit<Expense, 'id' | 'createdAt'>) => {
     setFormLoading(true);
     try {
+      const dataWithUser = { ...expenseData, userId: currentUser!.id };
       if (editingExpense && editingExpense.id) {
-        await updateExpense(editingExpense.id, expenseData);
+        await updateExpense(editingExpense.id, dataWithUser, currentUser!.id, currentUser!.login);
       } else {
-        await addExpense(expenseData);
+        await addExpense(dataWithUser, currentUser!.id, currentUser!.login);
       }
       Swal.fire(t('success'), t('saveSuccess'), 'success');
       setIsModalOpen(false);

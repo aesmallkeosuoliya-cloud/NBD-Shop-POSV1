@@ -1,5 +1,4 @@
 
-
 export enum Language {
   LO = 'lo',
   TH = 'th',
@@ -16,19 +15,43 @@ export interface LanguageContextType {
   t: (key: TranslationKey, replacements?: Record<string, string>) => string;
 }
 
-// Simplified Firebase User type
+// Add FirebaseUser for the legacy auth listener
 export interface FirebaseUser {
   uid: string;
   email: string | null;
-  displayName?: string | null;
+  displayName: string | null;
+}
+
+// --- NEW Internal User & Auth System ---
+export type UserRole = 'admin' | 'manager' | 'sales' | 'purchasing' | 'gr';
+
+export interface InternalUser {
+  id: string;
+  login: string; // Can be username or email
+  passwordHash: string; // IMPORTANT: In a real app, this MUST be a secure hash (e.g., bcrypt)
+  role: UserRole;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AuthContextType {
-  currentUser: FirebaseUser | null;
+  currentUser: InternalUser | null;
   loading: boolean;
-  login: (email: string, pass: string) => Promise<FirebaseUser>;
+  login: (login: string, pass: string) => Promise<InternalUser>;
   logout: () => Promise<void>;
+  hasPermission: (allowedRoles: UserRole[]) => boolean;
 }
+
+export interface AuditLog {
+  id: string;
+  timestamp: string;
+  userId: string;
+  userLogin: string; // Denormalized for easier display
+  action: string; // e.g., 'create_sale', 'update_product', 'delete_user'
+  targetId?: string; // e.g., saleId, productId, userId
+  details?: string; // e.g., "Updated stock from 10 to 5"
+}
+// --- END NEW Internal User & Auth System ---
 
 export interface Customer {
   id: string;
@@ -132,7 +155,8 @@ export interface Sale {
   customerPhone?: string;
   transactionDate: string; // ISO date string
   dueDate?: string; // ISO date string, for credit sales
-  salespersonName?: string;
+  userId?: string; // ID of the user who made the sale
+  salespersonName?: string; // Denormalized for easier display
   salesChannel?: string;
   
   totalCartOriginalPrice: number; // Sum of (item.originalUnitPriceBeforePromo or item.originalUnitPrice) * quantity
@@ -198,6 +222,7 @@ export interface Purchase { // This is a Stock-In document
   relatedPoId?: string; // Link to the PurchaseOrder ID
   items: PurchaseItemDetail[];
   paymentMethod?: 'credit' | 'cash' | 'transfer';
+  userId?: string; // For audit trail
 
   currency: 'LAK' | 'THB' | 'USD';
   exchangeRate: number;
@@ -241,6 +266,7 @@ export interface PurchaseOrder {
   status: PurchaseOrderStatus;
   createdAt: string; // ISO Date string
   updatedAt: string; // ISO Date string
+  userId?: string;
 }
 
 
@@ -255,6 +281,7 @@ export interface Expense {
   supplierId?: string;
   relatedPurchaseId?: string; // ID of the Stock-In document if expense is auto-generated
   createdAt: string; // ISO Date string, typically matches 'date' for new expenses
+  userId?: string;
 }
 
 export interface Supplier {

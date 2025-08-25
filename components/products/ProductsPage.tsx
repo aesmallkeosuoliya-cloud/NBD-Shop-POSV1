@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 const { useNavigate } = ReactRouterDOM;
 import { Product, Supplier } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
 import ProductForm from './ProductForm';
@@ -26,6 +26,7 @@ const SortIcon: React.FC<{ direction?: 'ascending' | 'descending' }> = ({ direct
 // --- MAIN COMPONENT ---
 const ProductsPage: React.FC = () => {
   const { t, language } = useLanguage(); 
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
   
   // Data State
@@ -51,6 +52,7 @@ const ProductsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>(() => ((sessionStorage.getItem('productsPageStatusFilter') as 'all' | 'active' | 'inactive') || 'all'));
   const [sortConfig, setSortConfig] = useState<{ key: keyof Product | 'supplierName' | null; direction: 'ascending' | 'descending' }>({ key: 'name', direction: 'ascending' });
 
+  const isSalesRole = currentUser?.role === 'sales';
   const currencySymbol = useMemo(() => (language === 'lo' ? t('currencyKip') : t('currencyBaht')), [language, t]);
 
   const formatCurrency = useCallback((value: number | null | undefined) => {
@@ -155,6 +157,12 @@ const ProductsPage: React.FC = () => {
     const isCtrlPressed = event.metaKey || event.ctrlKey;
     const currentProductIds = finalFilteredAndSortedProducts.map(p => p.id);
 
+    if (isSalesRole) { // Sales can only select one row at a time for viewing
+        setSelectedProductIds(new Set([productId]));
+        setLastSelectedRowIndex(rowIndex);
+        return;
+    }
+
     if (isShiftPressed && lastSelectedRowIndex !== null) {
         const start = Math.min(lastSelectedRowIndex, rowIndex);
         const end = Math.max(lastSelectedRowIndex, rowIndex);
@@ -180,19 +188,21 @@ const ProductsPage: React.FC = () => {
   };
 
   const handleEditProduct = (product: Product) => {
+    if (isSalesRole) return;
     setEditingProduct(product);
     setIsModalOpen(true);
   };
 
   const handleSubmitForm = async (productData: Product) => {
+    if (!currentUser) return;
     setFormLoading(true);
     try {
       if (editingProduct && editingProduct.id) {
         const { id, createdAt, updatedAt, profitPerUnit, ...dataToUpdate} = productData;
-        await updateProduct(editingProduct.id, dataToUpdate);
+        await updateProduct(editingProduct.id, dataToUpdate, currentUser.id, currentUser.login);
       } else {
         const { id, createdAt, updatedAt, ...newProductData } = productData;
-        await addProduct(newProductData as Omit<Product, 'id' | 'createdAt' | 'updatedAt' | 'profitPerUnit'>);
+        await addProduct(newProductData as Omit<Product, 'id' | 'createdAt' | 'updatedAt' | 'profitPerUnit'>, currentUser.id, currentUser.login);
       }
       Swal.fire(t('success'), t('saveSuccess'), 'success');
       setIsModalOpen(false);
@@ -218,6 +228,7 @@ const ProductsPage: React.FC = () => {
   }, [finalFilteredAndSortedProducts]);
 
   const handleContextMenu = (event: React.MouseEvent, product: Product, cellValue: any) => {
+    if (isSalesRole) return;
     event.preventDefault();
     if (!selectedProductIds.has(product.id)) {
         setSelectedProductIds(new Set([product.id]));
@@ -270,7 +281,7 @@ const ProductsPage: React.FC = () => {
 
   const handleDeleteSelected = useCallback(async () => {
     setContextMenu(null);
-    if (selectedProductIds.size === 0) return;
+    if (selectedProductIds.size === 0 || !currentUser) return;
     const result = await Swal.fire({
       title: t('areYouSure'),
       text: t('confirmDeleteSelected', { count: selectedProductIds.size.toString() }),
@@ -284,7 +295,7 @@ const ProductsPage: React.FC = () => {
     if (result.isConfirmed) {
       setFormLoading(true);
       try {
-        await deleteMultipleProducts(Array.from(selectedProductIds));
+        await deleteMultipleProducts(Array.from(selectedProductIds), currentUser.id, currentUser.login);
         Swal.fire(t('deleted'), t('deleteSuccess'), 'success');
         setSelectedProductIds(new Set());
         fetchData(); 
@@ -294,11 +305,11 @@ const ProductsPage: React.FC = () => {
         setFormLoading(false);
       }
     }
-  }, [selectedProductIds, t, fetchData]);
+  }, [selectedProductIds, t, fetchData, currentUser]);
   
   const handleDeactivateSelected = useCallback(async () => {
     setContextMenu(null);
-    if (selectedProductIds.size === 0) return;
+    if (selectedProductIds.size === 0 || !currentUser) return;
     const productsToDeactivate = products.filter(p => selectedProductIds.has(p.id));
     const productsWithStock = productsToDeactivate.filter(p => p.stock > 0);
 
@@ -323,7 +334,7 @@ const ProductsPage: React.FC = () => {
     if (result.isConfirmed) {
         setFormLoading(true);
         try {
-            await updateMultipleProductsStatus(Array.from(selectedProductIds), false);
+            await updateMultipleProductsStatus(Array.from(selectedProductIds), false, currentUser.id, currentUser.login);
             Swal.fire(t('success'), t('deactivateSuccess'), 'success');
             setSelectedProductIds(new Set());
             fetchData();
@@ -333,11 +344,11 @@ const ProductsPage: React.FC = () => {
             setFormLoading(false);
         }
     }
-  }, [selectedProductIds, products, t, fetchData]);
+  }, [selectedProductIds, products, t, fetchData, currentUser]);
   
   const handleActivateSelected = useCallback(async () => {
     setContextMenu(null);
-    if (selectedProductIds.size === 0) return;
+    if (selectedProductIds.size === 0 || !currentUser) return;
     const result = await Swal.fire({
         title: t('areYouSure'),
         text: t('confirmActivateSelected', { count: selectedProductIds.size.toString() }),
@@ -350,7 +361,7 @@ const ProductsPage: React.FC = () => {
     if (result.isConfirmed) {
         setFormLoading(true);
         try {
-            await updateMultipleProductsStatus(Array.from(selectedProductIds), true);
+            await updateMultipleProductsStatus(Array.from(selectedProductIds), true, currentUser.id, currentUser.login);
             Swal.fire(t('success'), t('activateSuccess'), 'success');
             setSelectedProductIds(new Set());
             fetchData();
@@ -360,7 +371,7 @@ const ProductsPage: React.FC = () => {
             setFormLoading(false);
         }
     }
-  }, [selectedProductIds, t, fetchData]);
+  }, [selectedProductIds, t, fetchData, currentUser]);
 
   const SortableHeader: React.FC<{ sortKey: keyof Product | 'supplierName', labelKey: string, className?: string }> = ({ sortKey, labelKey, className }) => (
     <th scope="col" className={`px-2 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 whitespace-nowrap ${className}`} onClick={() => requestSort(sortKey)}>
@@ -371,44 +382,48 @@ const ProductsPage: React.FC = () => {
 
   return (
     <div className="p-4 md:p-6 h-full flex flex-col">
-      <div className="mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-        <div>
-          <label htmlFor="categoryFilter" className="block text-sm font-medium text-gray-700 mb-1">{t('productCategoryFilterLabel')}</label>
-          <select id="categoryFilter" value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}
-            className="mt-1 block w-full h-11 px-3 py-2.5 bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm"
-          >
-            <option value="all">{t('allCategoriesOption')}</option>
-            {allAvailableCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="statusFilter" className="block text-sm font-medium text-gray-700 mb-1">{t('statusFilterLabel')}</label>
-          <select id="statusFilter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="mt-1 block w-full h-11 px-3 py-2.5 bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm"
-          >
-            <option value="all">{t('statusFilterAll')}</option>
-            <option value="active">{t('statusFilterActive')}</option>
-            <option value="inactive">{t('statusFilterInactive')}</option>
-          </select>
-        </div>
-        <div className="lg:col-span-2">
-          <Card title={t('totalStockValue')} className="text-center md:text-left bg-purple-50" titleClassName="text-purple-700">
-            <p className="text-2xl font-bold text-purple-700">{formatCurrency(totalStockValue)} {currencySymbol}</p>
-          </Card>
-        </div>
-      </div>
+      {!isSalesRole && (
+          <div className="mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+              <div>
+                  <label htmlFor="categoryFilter" className="block text-sm font-medium text-gray-700 mb-1">{t('productCategoryFilterLabel')}</label>
+                  <select id="categoryFilter" value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}
+                      className="mt-1 block w-full h-11 px-3 py-2.5 bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm"
+                  >
+                      <option value="all">{t('allCategoriesOption')}</option>
+                      {allAvailableCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                  </select>
+              </div>
+              <div>
+                  <label htmlFor="statusFilter" className="block text-sm font-medium text-gray-700 mb-1">{t('statusFilterLabel')}</label>
+                  <select id="statusFilter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)}
+                      className="mt-1 block w-full h-11 px-3 py-2.5 bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm"
+                  >
+                      <option value="all">{t('statusFilterAll')}</option>
+                      <option value="active">{t('statusFilterActive')}</option>
+                      <option value="inactive">{t('statusFilterInactive')}</option>
+                  </select>
+              </div>
+              <div className="lg:col-span-2">
+                  <Card title={t('totalStockValue')} className="text-center md:text-left bg-purple-50" titleClassName="text-purple-700">
+                      <p className="text-2xl font-bold text-purple-700">{formatCurrency(totalStockValue)} {currencySymbol}</p>
+                  </Card>
+              </div>
+          </div>
+      )}
 
       <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
         <Input placeholder={`${t('search')}...`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="max-w-md h-11" wrapperClassName="mb-0 flex-grow" />
-        <div className="flex items-center gap-2 flex-wrap justify-end">
-            <Button onClick={handleDeleteSelected} variant="danger" disabled={selectedProductIds.size === 0}>{t('deleteSelected')}</Button>
-            <Button onClick={handleDeactivateSelected} variant="outline" className="border-orange-500 text-orange-600 hover:bg-orange-50" disabled={selectedProductIds.size === 0}>{t('deactivateSelected')}</Button>
-            <Button onClick={handleActivateSelected} variant="outline" className="border-green-500 text-green-600 hover:bg-green-50" disabled={selectedProductIds.size === 0}>{t('activateSelected')}</Button>
-            <div className="border-l h-8 mx-2 hidden sm:block"></div>
-            <Button onClick={() => navigate('/products/import')} variant="secondary">{t('addFromExcel')}</Button>
-            <Button onClick={() => navigate('/products/edit-from-excel')} variant="outline" className="border-orange-500 text-orange-600 hover:bg-orange-50">{t('editFromExcel')}</Button>
-            <Button onClick={handleAddProduct} variant="primary" leftIcon={<PlusIcon />} className="h-11">{t('addNewProduct')}</Button>
-        </div>
+        {!isSalesRole && (
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+              <Button onClick={handleDeleteSelected} variant="danger" disabled={selectedProductIds.size === 0}>{t('deleteSelected')}</Button>
+              <Button onClick={handleDeactivateSelected} variant="outline" className="border-orange-500 text-orange-600 hover:bg-orange-50" disabled={selectedProductIds.size === 0}>{t('deactivateSelected')}</Button>
+              <Button onClick={handleActivateSelected} variant="outline" className="border-green-500 text-green-600 hover:bg-green-50" disabled={selectedProductIds.size === 0}>{t('activateSelected')}</Button>
+              <div className="border-l h-8 mx-2 hidden sm:block"></div>
+              <Button onClick={() => navigate('/products/import')} variant="secondary">{t('addFromExcel')}</Button>
+              <Button onClick={() => navigate('/products/edit-from-excel')} variant="outline" className="border-orange-500 text-orange-600 hover:bg-orange-50">{t('editFromExcel')}</Button>
+              <Button onClick={handleAddProduct} variant="primary" leftIcon={<PlusIcon />} className="h-11">{t('addNewProduct')}</Button>
+          </div>
+        )}
       </div>
 
       {isLoading && !products.length ? ( 
@@ -417,64 +432,81 @@ const ProductsPage: React.FC = () => {
         <div className="overflow-auto relative border rounded-lg shadow-md flex-grow" style={{ height: 'calc(100vh - 25rem)' }}>
           <table className="min-w-full divide-y divide-gray-200 border-collapse">
             <thead className="bg-gray-50" style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-              <tr>
-                <SortableHeader sortKey="barcode" labelKey="barcode" className="text-left" />
-                <SortableHeader sortKey="name" labelKey="productName" className="text-left" />
-                <SortableHeader sortKey="stock" labelKey="stock" className="text-right" />
-                <SortableHeader sortKey="unit" labelKey="unit" className="text-left" />
-                <SortableHeader sortKey="sellingPrice" labelKey="sellingPrice" className="text-right" />
-                <th scope="col" className="px-2 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('gpPercent')}</th>
-                <SortableHeader sortKey="costPrice" labelKey="costPrice" className="text-right" />
-                <SortableHeader sortKey="secondName" labelKey="secondName" className="text-left" />
-                <SortableHeader sortKey="productType" labelKey="productType" className="text-left" />
-                <SortableHeader sortKey="category" labelKey="productCategory" className="text-left" />
-                <SortableHeader sortKey="brand" labelKey="brand" className="text-left" />
-                <SortableHeader sortKey="supplierName" labelKey="supplier" className="text-left" />
-                <SortableHeader sortKey="showInPOS" labelKey="productStatus" className="text-center" />
-              </tr>
+              {isSalesRole ? (
+                <tr>
+                  <SortableHeader sortKey="barcode" labelKey="barcode" className="text-left" />
+                  <SortableHeader sortKey="name" labelKey="productName" className="text-left" />
+                  <SortableHeader sortKey="stock" labelKey="stock" className="text-right" />
+                  <SortableHeader sortKey="unit" labelKey="unit" className="text-left" />
+                  <SortableHeader sortKey="sellingPrice" labelKey="sellingPrice" className="text-right" />
+                </tr>
+              ) : (
+                <tr>
+                  <SortableHeader sortKey="barcode" labelKey="barcode" className="text-left" />
+                  <SortableHeader sortKey="name" labelKey="productName" className="text-left" />
+                  <SortableHeader sortKey="stock" labelKey="stock" className="text-right" />
+                  <SortableHeader sortKey="unit" labelKey="unit" className="text-left" />
+                  <SortableHeader sortKey="sellingPrice" labelKey="sellingPrice" className="text-right" />
+                  <th scope="col" className="px-2 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('gpPercent')}</th>
+                  <SortableHeader sortKey="costPrice" labelKey="costPrice" className="text-right" />
+                  <SortableHeader sortKey="secondName" labelKey="secondName" className="text-left" />
+                  <SortableHeader sortKey="productType" labelKey="productType" className="text-left" />
+                  <SortableHeader sortKey="category" labelKey="productCategory" className="text-left" />
+                  <SortableHeader sortKey="brand" labelKey="brand" className="text-left" />
+                  <SortableHeader sortKey="supplierName" labelKey="supplier" className="text-left" />
+                  <SortableHeader sortKey="showInPOS" labelKey="productStatus" className="text-center" />
+                </tr>
+              )}
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {finalFilteredAndSortedProducts.map((product, index) => {
-                const profit = product.profitPerUnit ?? (product.sellingPrice - product.costPrice);
-                const gp = product.sellingPrice > 0 ? (profit / product.sellingPrice) * 100 : 0;
-                
-                return (
+              {finalFilteredAndSortedProducts.map((product, index) => (
                 <tr key={product.id} 
                     onClick={(e) => handleRowClick(e, product.id, index)} 
-                    onDoubleClick={() => handleEditProduct(product)}
-                    onContextMenu={(e) => handleContextMenu(e, product, null)}
+                    onDoubleClick={isSalesRole ? undefined : () => handleEditProduct(product)}
+                    onContextMenu={isSalesRole ? undefined : (e) => handleContextMenu(e, product, null)}
                     className={`transition-colors text-sm cursor-pointer ${selectedProductIds.has(product.id) ? 'bg-purple-100' : 'hover:bg-gray-50'} ${!product.showInPOS ? 'text-gray-500' : ''}`}>
-                  <td className="px-2 py-2 whitespace-nowrap" onContextMenu={(e) => handleContextMenu(e, product, product.barcode)}>{product.barcode || '-'}</td>
-                  <td className="px-2 py-2 whitespace-nowrap" onContextMenu={(e) => handleContextMenu(e, product, product.name)}>
-                    <div className={`font-medium ${!product.showInPOS ? 'text-gray-600' : 'text-gray-900'}`}>{product.name}</div>
-                  </td>
-                  <td className="px-2 py-2 whitespace-nowrap text-right" onContextMenu={(e) => handleContextMenu(e, product, product.stock)}>{product.stock}</td>
-                  <td className="px-2 py-2 whitespace-nowrap" onContextMenu={(e) => handleContextMenu(e, product, product.unit)}>{product.unit}</td>
-                  <td className="px-2 py-2 whitespace-nowrap text-right" onContextMenu={(e) => handleContextMenu(e, product, product.sellingPrice)}>{formatCurrency(product.sellingPrice)}</td>
-                  <td className="px-2 py-2 whitespace-nowrap text-right" onContextMenu={(e) => handleContextMenu(e, product, `${gp.toFixed(2)}%`)}>{gp.toFixed(2)}%</td>
-                  <td className="px-2 py-2 whitespace-nowrap text-right" onContextMenu={(e) => handleContextMenu(e, product, product.costPrice)}>{formatCurrency(product.costPrice)}</td>
-                  <td className="px-2 py-2 whitespace-nowrap" onContextMenu={(e) => handleContextMenu(e, product, product.secondName)}>{product.secondName || '-'}</td>
-                  <td className="px-2 py-2 whitespace-nowrap" onContextMenu={(e) => handleContextMenu(e, product, product.productType)}>{product.productType || '-'}</td>
-                  <td className="px-2 py-2 whitespace-nowrap" onContextMenu={(e) => handleContextMenu(e, product, product.category)}>{product.category}</td>
-                  <td className="px-2 py-2 whitespace-nowrap" onContextMenu={(e) => handleContextMenu(e, product, product.brand)}>{product.brand || '-'}</td>
-                  <td className="px-2 py-2 whitespace-nowrap" onContextMenu={(e) => handleContextMenu(e, product, supplierMap.get(product.supplierId || ''))}>{product.supplierId ? supplierMap.get(product.supplierId) || '-' : '-'}</td>
-                  <td className="px-2 py-2 whitespace-nowrap text-center" onContextMenu={(e) => handleContextMenu(e, product, product.showInPOS ? t('statusActive') : t('statusInactive'))}>
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${product.showInPOS ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                      {product.showInPOS ? t('statusActive') : t('statusInactive')}
-                    </span>
-                  </td>
+                  {isSalesRole ? (
+                    <>
+                      <td className="px-2 py-2 whitespace-nowrap">{product.barcode || '-'}</td>
+                      <td className="px-2 py-2 whitespace-nowrap"><div className={`font-medium ${!product.showInPOS ? 'text-gray-600' : 'text-gray-900'}`}>{product.name}</div></td>
+                      <td className="px-2 py-2 whitespace-nowrap text-right">{product.stock}</td>
+                      <td className="px-2 py-2 whitespace-nowrap">{product.unit}</td>
+                      <td className="px-2 py-2 whitespace-nowrap text-right">{formatCurrency(product.sellingPrice)}</td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="px-2 py-2 whitespace-nowrap" onContextMenu={(e) => handleContextMenu(e, product, product.barcode)}>{product.barcode || '-'}</td>
+                      <td className="px-2 py-2 whitespace-nowrap" onContextMenu={(e) => handleContextMenu(e, product, product.name)}>
+                        <div className={`font-medium ${!product.showInPOS ? 'text-gray-600' : 'text-gray-900'}`}>{product.name}</div>
+                      </td>
+                      <td className="px-2 py-2 whitespace-nowrap text-right" onContextMenu={(e) => handleContextMenu(e, product, product.stock)}>{product.stock}</td>
+                      <td className="px-2 py-2 whitespace-nowrap" onContextMenu={(e) => handleContextMenu(e, product, product.unit)}>{product.unit}</td>
+                      <td className="px-2 py-2 whitespace-nowrap text-right" onContextMenu={(e) => handleContextMenu(e, product, product.sellingPrice)}>{formatCurrency(product.sellingPrice)}</td>
+                      <td className="px-2 py-2 whitespace-nowrap text-right" onContextMenu={(e) => handleContextMenu(e, product, `${((product.profitPerUnit ?? (product.sellingPrice - product.costPrice)) / (product.sellingPrice || 1) * 100).toFixed(2)}%`)}>{((product.profitPerUnit ?? (product.sellingPrice - product.costPrice)) / (product.sellingPrice || 1) * 100).toFixed(2)}%</td>
+                      <td className="px-2 py-2 whitespace-nowrap text-right" onContextMenu={(e) => handleContextMenu(e, product, product.costPrice)}>{formatCurrency(product.costPrice)}</td>
+                      <td className="px-2 py-2 whitespace-nowrap" onContextMenu={(e) => handleContextMenu(e, product, product.secondName)}>{product.secondName || '-'}</td>
+                      <td className="px-2 py-2 whitespace-nowrap" onContextMenu={(e) => handleContextMenu(e, product, product.productType)}>{product.productType || '-'}</td>
+                      <td className="px-2 py-2 whitespace-nowrap" onContextMenu={(e) => handleContextMenu(e, product, product.category)}>{product.category}</td>
+                      <td className="px-2 py-2 whitespace-nowrap" onContextMenu={(e) => handleContextMenu(e, product, product.brand)}>{product.brand || '-'}</td>
+                      <td className="px-2 py-2 whitespace-nowrap" onContextMenu={(e) => handleContextMenu(e, product, supplierMap.get(product.supplierId || ''))}>{product.supplierId ? supplierMap.get(product.supplierId) || '-' : '-'}</td>
+                      <td className="px-2 py-2 whitespace-nowrap text-center" onContextMenu={(e) => handleContextMenu(e, product, product.showInPOS ? t('statusActive') : t('statusInactive'))}>
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${product.showInPOS ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          {product.showInPOS ? t('statusActive') : t('statusInactive')}
+                        </span>
+                      </td>
+                    </>
+                  )}
                 </tr>
-              );
-            })}
+              ))}
               {finalFilteredAndSortedProducts.length === 0 && !isLoading && (
-                 <tr><td colSpan={13} className="text-center py-10 text-gray-500">{t('noDataFound')}</td></tr>
+                 <tr><td colSpan={isSalesRole ? 5 : 13} className="text-center py-10 text-gray-500">{t('noDataFound')}</td></tr>
               )}
             </tbody>
           </table>
         </div>
       )}
 
-      {contextMenu?.visible && (
+      {!isSalesRole && contextMenu?.visible && (
         <div style={{ top: contextMenu.y, left: contextMenu.x }} className="absolute z-50 bg-white shadow-lg rounded-md py-1 w-56 border text-sm">
           <div onClick={handleCopyRows} className="px-4 py-2 hover:bg-gray-100 cursor-pointer">{t('copyToClipboard')} ({selectedProductIds.size})</div>
           <div onClick={handleCopyCell} className="px-4 py-2 hover:bg-gray-100 cursor-pointer">{t('copyCellToClipboard')}</div>
@@ -489,7 +521,7 @@ const ProductsPage: React.FC = () => {
         </div>
       )}
 
-      {isModalOpen && (
+      {!isSalesRole && isModalOpen && (
         <Modal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}

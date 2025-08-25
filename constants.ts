@@ -1,3 +1,4 @@
+
 import { StoreSettings, Language } from './types';
 
 // --- Firebase Configuration ---

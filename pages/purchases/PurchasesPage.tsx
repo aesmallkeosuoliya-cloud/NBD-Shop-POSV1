@@ -4,13 +4,15 @@ import { Purchase, PurchaseOrder } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import Button from '../../components/common/Button'; 
 import Card from '../../components/common/Card'; 
-import PurchaseForm from './PurchaseForm';
+import PurchaseForm from './PurchaseForm'; // NEW: Import the refactored form
 import LoadingSpinner from '../../components/common/LoadingSpinner'; 
 import { addPurchaseAndProcess, getPurchaseOrderById } from '../../services/firebaseService';
 import { UI_COLORS } from '../../constants';
 import * as ReactRouterDOM from 'react-router-dom';
-const { useLocation, useNavigate } = ReactRouterDOM;
 import SelectPOModal from '../../components/po/SelectPOModal'; 
+import { useAuth } from '../../contexts/AuthContext'; // NEW: For audit trail
+
+const { useLocation, useNavigate } = ReactRouterDOM;
 
 declare var Swal: any; // For SweetAlert2
 
@@ -20,6 +22,7 @@ const ImportIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 
 
 const PurchasesPage: React.FC = () => {
   const { t } = useLanguage();
+  const { currentUser } = useAuth(); // NEW: Get current user for logging
   const location = useLocation(); 
   const navigate = useNavigate(); 
 
@@ -61,12 +64,26 @@ const PurchasesPage: React.FC = () => {
   const handleSubmitForm = async (
     purchaseData: Omit<Purchase, 'id' | 'createdAt' | 'updatedAt'>
   ) => {
+    if (!currentUser) {
+        Swal.fire(t('error'), 'User not logged in.', 'error');
+        return;
+    }
     setFormLoading(true);
     try {
       const expenseCategoryText = t('purchaseExpenseCategory');
       const expenseDescriptionTemplate = t('purchaseExpenseDescription');
       const costAccountingCategoryName = t('accountingCategory_cost');
-      await addPurchaseAndProcess(purchaseData, expenseCategoryText, expenseDescriptionTemplate, costAccountingCategoryName);
+      
+      // NEW: Pass user details for audit trail
+      await addPurchaseAndProcess(
+        { ...purchaseData, userId: currentUser.id },
+        expenseCategoryText, 
+        expenseDescriptionTemplate, 
+        costAccountingCategoryName,
+        currentUser.id,
+        currentUser.login
+      );
+
       Swal.fire(t('success'), t('purchaseSuccess'), 'success');
       navigate('/purchase-history', { replace: true }); 
     } catch (error) {
@@ -113,6 +130,7 @@ const PurchasesPage: React.FC = () => {
         </div>
       ) : (
         <Card>
+            {/* NEW: Use the refactored PurchaseForm component */}
             <PurchaseForm
               onSubmit={handleSubmitForm} 
               onCancel={handleCancelForm}

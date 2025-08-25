@@ -54,8 +54,8 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, pageTitle }) => {
           <div className="flex items-center space-x-3">
             {currentUser && (
               <>
-                <span className="text-sm text-gray-600 hidden sm:block" title={currentUser.email || t('user')}>
-                  {currentUser.displayName || currentUser.email}
+                <span className="text-sm text-gray-600 hidden sm:block" title={currentUser.login}>
+                  {currentUser.login}
                 </span>
                 <Button 
                   onClick={handleLogout} 

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -17,7 +18,7 @@ import { UI_COLORS } from '../../constants';
 declare var Swal: any;
 
 const EyeIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>;
-const EyeOffIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7 1.274-4.057 5.064-7 9.542-7 .847 0 1.67.127 2.454.364m-3.033 4.22a4.5 4.5 0 00-6.364-6.364m6.364 6.364l-6.364-6.364" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3.98 8.223A10.034 10.034 0 001.954 12c1.274 4.057 5.064 7 9.542 7 1.145 0 2.25-.13 3.3-.364m-3.35-2.022a4.5 4.5 0 006.364 6.364m-6.364-6.364l6.364 6.364" /></svg>;
+const EyeOffIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7 1.274-4.057 5.064 7 9.542 7 .847 0 1.67.127 2.454.364m-3.033 4.22a4.5 4.5 0 00-6.364-6.364m6.364 6.364l-6.364-6.364" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3.98 8.223A10.034 10.034 0 001.954 12c1.274 4.057 5.064 7 9.542 7 1.145 0 2.25-.13 3.3-.364m-3.35-2.022a4.5 4.5 0 006.364 6.364m-6.364-6.364l6.364 6.364" /></svg>;
 
 const ResetDataPage: React.FC = () => {
   const { t } = useLanguage();
@@ -60,8 +61,12 @@ const ResetDataPage: React.FC = () => {
 
     setIsResetting(true);
     try {
-      if (!currentUser?.email) throw new Error("User email not found");
-      await reauthenticateUser(currentUser.email, password);
+      if (!currentUser?.login) throw new Error("User not logged in.");
+      const isAuthenticated = await reauthenticateUser(currentUser.login, password);
+
+      if (!isAuthenticated) {
+          throw new Error('reauth_failed');
+      }
 
       const tasks: Promise<void>[] = [];
       if (options.sales) tasks.push(clearAllSalesAndPayments());
@@ -79,7 +84,7 @@ const ResetDataPage: React.FC = () => {
 
     } catch (error: any) {
       console.error("Error during data reset:", error);
-      if (error.code === 'auth/wrong-password' || error.message.includes('auth/wrong-password')) {
+      if (error.message === 'reauth_failed') {
         Swal.fire(t('error'), t('reauthError'), 'error');
       } else {
         Swal.fire(t('error'), t('errorOccurred'), 'error');

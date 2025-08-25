@@ -1,6 +1,4 @@
 
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Purchase, PurchaseItemDetail } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
