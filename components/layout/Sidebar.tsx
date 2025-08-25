@@ -1,3 +1,4 @@
+
 import React from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 const { Link, useLocation } = ReactRouterDOM;
@@ -82,7 +83,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
         { path: '/products/print-barcodes', labelKey: 'sidebarBarcodePrint', icon: <BarcodeIcon /> },
         { path: '/purchases', labelKey: 'purchases', icon: <ShoppingBagIcon /> },
         { path: '/purchase-history', labelKey: 'purchaseHistory', icon: <HistoryIcon /> },
-        { path: '/reports/stock-movement', labelKey: 'stockMovementReportPageTitle', icon: <HistoryIcon /> },
       ],
     },
     {
@@ -112,6 +112,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
             { path: '/reports/profit-loss', labelKey: 'profitLossSummaryPageTitle', icon: <ReportsIcon /> },
             { path: '/reports/balance-sheet', labelKey: 'balanceSheet', icon: <ReportsIcon /> },
             { path: '/reports/cash-flow', labelKey: 'cashFlowStatement', icon: <ReportsIcon /> },
+            { path: '/reports/stock-movement', labelKey: 'stockMovementReportPageTitle', icon: <ReportsIcon /> },
+            { path: '/reports/accounts-payable-aging', labelKey: 'apAgingReport', icon: <ReportsIcon /> },
         ]
     },
     {
