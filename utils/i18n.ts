@@ -853,6 +853,16 @@ const translations: Record<Language, Translations> = {
     cashFlowChartTitle: "ກຣາບສະແດງການເຄື່ອນໄຫວເງິນສົດ",
     period: "ຊ່ວງເວລາ",
     cashBalance: "ຍອດເງິນສົດຄົງເຫຼືອ",
+    
+    // AP Aging Report - New/Updated
+    endDueDate: 'ວັນຄົບກຳນົດເຖິງ',
+    unpaidSupplier: 'ລາຍການເຈົ້າໜີ້ຄ้างชำระ',
+    unpaidSupplierDetail: 'ລາຍລະອຽດເຈົ້າໜີ້ຄ้างชำระ',
+    billCount: 'ຈຳນວນບິນຄ້າງຊຳລະ',
+    outstandingAmountInCurrency: 'ຍອດຄ້າງຊຳລະ',
+    creditDaysColumn: 'ເຄດິດ (ວັນ)',
+    balanceAmount: 'ຍອດຄົງຄ້າງ',
+    printReport: 'ພິມລາຍງານ',
 
 
     // Language Switch
