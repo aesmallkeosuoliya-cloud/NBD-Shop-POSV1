@@ -156,6 +156,26 @@ const translations: Record<Language, Translations> = {
     exchangeRatesSavedSuccess: 'ບັນທຶກອັດຕາແລກປ່ຽນສຳເລັດ',
     errorSavingExchangeRates: 'ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກອັດຕາແລກປ່ຽນ',
 
+    // Reset Data - NEW
+    resetData: 'ຕັ້ງຄ່າຂໍ້ມູນໃໝ່',
+    resetDataWarningTitle: 'ຄຳເຕືອນອັນຕະລາຍ!',
+    resetDataWarningBody: 'ການກະທຳນີ້ຈະລຶບຂໍ້ມູນທັງໝົດທີ່ທ່ານເລືອກອອກຈາກບັນຊີຖາວອນ ແລະ **ບໍ່ສາມາດກູ້ຄືນໄດ້**. ກະລຸນາແນ່ໃຈກ່ອນດຳເນີນການ.',
+    resetDataSelectHeader: 'ເລືອກຂໍ້ມູນທີ່ຕ້ອງການລຶບ:',
+    resetDataSales: 'ຂໍ້ມູນການຂາຍທັງໝົດ (Sales & Unpaid)',
+    resetDataPurchases: 'ຂໍ້ມູນການຈັດຊື້ທັງໝົດ (Purchases)',
+    resetDataExpenses: 'ຂໍ້ມູນລາຍຈ່າຍທັງໝົດ (Expenses)',
+    resetDataStockHistory: 'ປະຫວັດການປັບສະຕັອກ',
+    resetDataMasterHeader: 'ລຶບຂໍ້ມູນຫຼັກ (ໃຊ້ດ້ວຍຄວາມລະມັດລະວັງ):',
+    resetDataProducts: 'ລຶບສິນຄ້າທັງໝົດ',
+    resetDataCustomers: 'ລຶບລູກຄ້າທັງໝົດ (ຍົກເວັ້ນລູກຄ້າທົ່ວໄປ)',
+    resetDataConfirmLabel: 'ເພື່ອຢືນຢັນ, ກະລຸນາປ້ອນລະຫັດຜ່ານຂອງທ່ານ:',
+    resetDataConfirmButton: 'ຂ້ອຍເຂົ້າໃຈ ແລະ ຕ້ອງການລຶບຂໍ້ມູນ',
+    resetDataConfirmDialogTitle: 'ຢືນຢັນການລຶບຂໍ້ມູນຄັ້ງສຸດທ້າຍ',
+    resetDataConfirmDialogText: 'ທ່ານກຳລັງຈະລຶບຂໍ້ມູນທີ່ເລືອກໄວ້ທັງໝົດຢ່າງຖາວອນ. ການກະທຳນີ້ບໍ່ສາມາດຍົກເລີກໄດ້. ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການດຳເນີນການຕໍ່?',
+    reauthError: 'ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ. ການລຶບຂໍ້ມູນຖືກຍົກເລີກ.',
+    resetSuccess: 'ລຶບຂໍ້ມູນສຳເລັດ!',
+
+
     // Dashboard
     todaySales: 'ຍອດຂາຍມື້ນີ້',
     monthSales: 'ຍອດຂາຍເດືອນນີ້',
@@ -1027,6 +1047,25 @@ const translations: Record<Language, Translations> = {
     saveExchangeRatesButton: 'บันทึกอัตราแลกเปลี่ยน',
     exchangeRatesSavedSuccess: 'บันทึกอัตราแลกเปลี่ยนสำเร็จ',
     errorSavingExchangeRates: 'เกิดข้อผิดพลาดในการบันทึกอัตราแลกเปลี่ยน',
+    
+    // Reset Data - NEW
+    resetData: 'ตั้งค่าข้อมูลใหม่',
+    resetDataWarningTitle: 'คำเตือนอันตราย!',
+    resetDataWarningBody: 'การกระทำนี้จะลบข้อมูลทั้งหมดที่คุณเลือกออกจากบัญชีอย่างถาวรและ **ไม่สามารถกู้คืนได้** โปรดแน่ใจก่อนดำเนินการ',
+    resetDataSelectHeader: 'เลือกข้อมูลที่ต้องการลบ:',
+    resetDataSales: 'ข้อมูลการขายทั้งหมด (Sales & Unpaid)',
+    resetDataPurchases: 'ข้อมูลการจัดซื้อทั้งหมด (Purchases)',
+    resetDataExpenses: 'ข้อมูลรายจ่ายทั้งหมด (Expenses)',
+    resetDataStockHistory: 'ประวัติการปรับสต็อก',
+    resetDataMasterHeader: 'ลบข้อมูลหลัก (ใช้ด้วยความระมัดระวัง):',
+    resetDataProducts: 'ลบสินค้าทั้งหมด',
+    resetDataCustomers: 'ลบลูกค้าทั้งหมด (ยกเว้นลูกค้าทั่วไป)',
+    resetDataConfirmLabel: 'เพื่อยืนยัน, กรุณาป้อนรหัสผ่านของคุณ:',
+    resetDataConfirmButton: 'ฉันเข้าใจและต้องการลบข้อมูล',
+    resetDataConfirmDialogTitle: 'ยืนยันการลบข้อมูลครั้งสุดท้าย',
+    resetDataConfirmDialogText: 'คุณกำลังจะลบข้อมูลที่เลือกไว้อย่างถาวร การกระทำนี้ไม่สามารถยกเลิกได้ คุณแน่ใจหรือไม่ว่าต้องการดำเนินการต่อ?',
+    reauthError: 'รหัสผ่านไม่ถูกต้อง การลบข้อมูลถูกยกเลิก',
+    resetSuccess: 'ลบข้อมูลสำเร็จ!',
 
     // Dashboard
     todaySales: 'ยอดขายวันนี้',

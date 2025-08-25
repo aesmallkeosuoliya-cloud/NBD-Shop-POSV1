@@ -38,6 +38,7 @@ const PromotionIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h
   <path strokeLinecap="round" strokeLinejoin="round" d="M9 14l-3-3m0 0l3-3m-3 3h12M3 21v-6a2 2 0 012-2h14a2 2 0 012 2v6M3 12V7a2 2 0 012-2h3.586a1 1 0 01.707.293l1.414 1.414a1 1 0 00.707.293H17a2 2 0 012 2v5M15 12H9" />
 </svg>;
 const BarcodeIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m-4-16v16m8-16v16M3 8h2m14 0h2M3 12h2m14 0h2M3 16h2m14 0h2" /></svg>;
+const ResetIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
 
 
 interface SidebarProps {
@@ -121,6 +122,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
         items: [
             { path: '/settings/store', labelKey: 'storeSettingsPageTitle', icon: <SettingsIcon /> },
             { path: '/settings/exchange-rate', labelKey: 'exchangeRateSettings', icon: <ExchangeRateIcon /> },
+            { path: '/settings/reset-data', labelKey: 'resetData', icon: <ResetIcon /> },
         ]
     }
   ];

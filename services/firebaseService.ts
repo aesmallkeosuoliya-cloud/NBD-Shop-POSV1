@@ -1142,6 +1142,45 @@ export const saveExchangeRates = async (rates: Omit<ExchangeRates, 'updatedAt'>)
   await getRef('appSettings/exchangeRates').set(dataToSave);
 };
 
+// --- Data Reset Service ---
+export const reauthenticateUser = async (email: string, pass: string): Promise<void> => {
+  if (!auth || !auth.currentUser) {
+    throw new Error("User not authenticated.");
+  }
+  const user = auth.currentUser;
+  const credential = window.firebase.auth.EmailAuthProvider.credential(email, pass);
+  await user.reauthenticateWithCredential(credential);
+};
+
+export const clearAllSalesAndPayments = async (): Promise<void> => {
+  const updates: { [key: string]: null } = {
+    'sales': null,
+    'salePayments': null,
+  };
+  await db.ref('/').update(updates);
+};
+
+export const clearAllPurchases = async (): Promise<void> => {
+  await getRef('purchases').remove();
+};
+
+export const clearAllExpenses = async (): Promise<void> => {
+  await getRef('expenses').remove();
+};
+
+export const clearAllProductsAndLogs = async (): Promise<void> => {
+  const updates: { [key: string]: null } = {
+    'products': null,
+    'productMovementLogs': null,
+  };
+  await db.ref('/').update(updates);
+};
+
+// "Walk-in customer" is not a stored entity, so we delete all customers.
+export const clearAllCustomers = async (walkInCustomerNameToExclude?: string): Promise<void> => {
+  await getRef('customers').remove();
+};
+
 
 // Initialize Firebase on load (when this module is imported)
 initializeFirebase();

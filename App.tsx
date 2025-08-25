@@ -21,6 +21,7 @@ import { CreditTrackingPage } from './components/creditTracking/CreditTrackingPa
 import CustomersPage from './components/customers/CustomersPage'; // New Customer Management Page
 import StoreSettingsPage from './components/settings/StoreSettingsPage'; // New Store Settings Page
 import ExchangeRatePage from './components/settings/ExchangeRatePage'; // NEW Exchange Rate Page
+import ResetDataPage from './components/settings/ResetDataPage'; // NEW Reset Data Page
 import ProfitLossPage from './components/reports/ProfitLossPage'; // New Profit & Loss Page
 import StockMovementReportPage from './components/reports/StockMovementReportPage'; // New Stock Movement Report Page
 import AccountsPayableAgingReportPage from './components/reports/AccountsPayableAgingReportPage'; // New AP Aging Report
@@ -91,6 +92,7 @@ const MainLayout: React.FC = () => {
     if (pathname.startsWith('/reports/cash-flow')) return 'cashFlowStatement'; // New
     if (pathname.startsWith('/reports/financial-dashboard')) return 'financialDashboard'; // New
     if (pathname.startsWith('/settings/exchange-rate')) return 'exchangeRateSettings';
+    if (pathname.startsWith('/settings/reset-data')) return 'resetData'; // New
     return 'appName'; 
   };
   
@@ -176,6 +178,7 @@ const App: React.FC = () => {
           <Route path="/credit-tracking" element={<PageWrapper titleKey="creditTrackingPageTitle"><CreditTrackingPage /></PageWrapper>} />
           <Route path="/settings/store" element={<PageWrapper titleKey="storeSettingsPageTitle"><StoreSettingsPage /></PageWrapper>} />
           <Route path="/settings/exchange-rate" element={<PageWrapper titleKey="exchangeRateSettings"><ExchangeRatePage /></PageWrapper>} />
+          <Route path="/settings/reset-data" element={<PageWrapper titleKey="resetData"><ResetDataPage /></PageWrapper>} /> {/* New */}
           <Route path="/reports/profit-loss" element={<PageWrapper titleKey="profitLossSummaryPageTitle"><ProfitLossPage /></PageWrapper>} />
           <Route path="/reports/stock-movement" element={<PageWrapper titleKey="stockMovementReportPageTitle"><StockMovementReportPage /></PageWrapper>} />
           <Route path="/reports/accounts-payable-aging" element={<PageWrapper titleKey="apAgingReport"><AccountsPayableAgingReportPage /></PageWrapper>} /> {/* New */}
