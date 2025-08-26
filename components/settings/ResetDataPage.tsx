@@ -1,18 +1,17 @@
 
 import React, { useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { useAuth } from '../../contexts/AuthContext';
 import Card from '../common/Card';
 import Input from '../common/Input';
 import Button from '../common/Button';
 import {
-  reauthenticateUser,
   clearAllSalesAndPayments,
   clearAllPurchases,
   clearAllExpenses,
   clearAllProductsAndLogs,
   clearAllCustomers,
 } from '../../services/firebaseService';
+import { reauthenticate } from '../../services/authService';
 import { UI_COLORS } from '../../constants';
 
 declare var Swal: any;
@@ -22,7 +21,6 @@ const EyeOffIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 
 
 const ResetDataPage: React.FC = () => {
   const { t } = useLanguage();
-  const { currentUser } = useAuth();
   const [options, setOptions] = useState({
     sales: false,
     purchases: false,
@@ -61,8 +59,7 @@ const ResetDataPage: React.FC = () => {
 
     setIsResetting(true);
     try {
-      if (!currentUser?.login) throw new Error("User not logged in.");
-      const isAuthenticated = await reauthenticateUser(currentUser.login, password);
+      const isAuthenticated = await reauthenticate(password);
 
       if (!isAuthenticated) {
           throw new Error('reauth_failed');
@@ -72,7 +69,7 @@ const ResetDataPage: React.FC = () => {
       if (options.sales) tasks.push(clearAllSalesAndPayments());
       if (options.purchases) tasks.push(clearAllPurchases());
       if (options.expenses) tasks.push(clearAllExpenses());
-      if (options.stockHistory) tasks.push(clearAllProductsAndLogs()); // This is tied to products for safety
+      if (options.stockHistory) tasks.push(clearAllProductsAndLogs());
       if (options.products) tasks.push(clearAllProductsAndLogs());
       if (options.customers) tasks.push(clearAllCustomers(t('walkInCustomer')));
 

@@ -118,7 +118,8 @@ const ExpensesPage: React.FC = () => {
     if (result.isConfirmed) {
       setFormLoading(true); // Use formLoading or a specific deleteLoading state
       try {
-        await deleteExpense(expense.id, currentUser!.id, currentUser!.login);
+        // @google/genai-api-fix: Use `currentUser.uid` and `currentUser.email` instead of `id` and `login`.
+        await deleteExpense(expense.id, currentUser!.uid, currentUser!.email);
         Swal.fire(t('deleted'), t('deleteSuccess'), 'success');
         fetchExpensesAndSuppliers(); 
       } catch (error) {
@@ -133,11 +134,14 @@ const ExpensesPage: React.FC = () => {
   const handleSubmitForm = async (expenseData: Omit<Expense, 'id' | 'createdAt'>) => {
     setFormLoading(true);
     try {
-      const dataWithUser = { ...expenseData, userId: currentUser!.id };
+      // @google/genai-api-fix: Use `currentUser.uid` instead of `id`.
+      const dataWithUser = { ...expenseData, userId: currentUser!.uid };
       if (editingExpense && editingExpense.id) {
-        await updateExpense(editingExpense.id, dataWithUser, currentUser!.id, currentUser!.login);
+        // @google/genai-api-fix: Use `currentUser.uid` and `currentUser.email` instead of `id` and `login`.
+        await updateExpense(editingExpense.id, dataWithUser, currentUser!.uid, currentUser!.email);
       } else {
-        await addExpense(dataWithUser, currentUser!.id, currentUser!.login);
+        // @google/genai-api-fix: Use `currentUser.uid` and `currentUser.email` instead of `id` and `login`.
+        await addExpense(dataWithUser, currentUser!.uid, currentUser!.email);
       }
       Swal.fire(t('success'), t('saveSuccess'), 'success');
       setIsModalOpen(false);

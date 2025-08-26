@@ -585,8 +585,9 @@ export const POSPage: React.FC = () => {
         customerName: selectedCustomerDetails?.name || t('walkInCustomer'),
         customerType: selectedCustomerDetails?.customerType || 'cash',
         transactionDate: new Date().toISOString(),
-        userId: currentUser.id,
-        salespersonName: currentUser.login,
+        // @google/genai-api-fix: Use `currentUser.uid` and `currentUser.email` instead of `id` and `login`.
+        userId: currentUser.uid,
+        salespersonName: currentUser.email,
         totalCartOriginalPrice: totalOriginalPrice,
         totalCartItemDiscountAmount: totalItemDiscount,
         subtotalAfterItemDiscounts: currentSubtotal,
@@ -614,7 +615,8 @@ export const POSPage: React.FC = () => {
         const expenseCategoryText = t('sellingExpenseForPromo');
         const expenseDescriptionTemplate = t('sellingExpenseForPromoDesc');
         const sellingAccountingCategoryName = t('accountingCategory_selling');
-        const savedSale = await addSale(saleData, expenseCategoryText, expenseDescriptionTemplate, sellingAccountingCategoryName, currentUser.id, currentUser.login);
+        // @google/genai-api-fix: Use `currentUser.uid` and `currentUser.email` instead of `id` and `login`.
+        const savedSale = await addSale(saleData, expenseCategoryText, expenseDescriptionTemplate, sellingAccountingCategoryName, currentUser.uid, currentUser.email);
         
         handlePrintReceipt(savedSale);
         

@@ -75,13 +75,14 @@ const PurchasesPage: React.FC = () => {
       const costAccountingCategoryName = t('accountingCategory_cost');
       
       // NEW: Pass user details for audit trail
+      // @google/genai-api-fix: Use `currentUser.uid` and `currentUser.email` instead of `id` and `login`.
       await addPurchaseAndProcess(
-        { ...purchaseData, userId: currentUser.id },
+        { ...purchaseData, userId: currentUser.uid },
         expenseCategoryText, 
         expenseDescriptionTemplate, 
         costAccountingCategoryName,
-        currentUser.id,
-        currentUser.login
+        currentUser.uid,
+        currentUser.email
       );
 
       Swal.fire(t('success'), t('purchaseSuccess'), 'success');

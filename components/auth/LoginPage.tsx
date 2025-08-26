@@ -7,6 +7,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import Input from '../common/Input';
 import Button from '../common/Button';
 import { APP_NAME, UI_COLORS } from '../../constants';
+import { AppUser } from '../../types';
 
 declare var Swal: any; // SweetAlert2
 
@@ -18,28 +19,53 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  
+  const handleRoleBasedRedirect = (user: AppUser) => {
+    switch (user.role) {
+      case 'sales':
+        navigate('/pos');
+        break;
+      case 'admin':
+        navigate('/settings/users');
+        break;
+      case 'purchasing':
+        navigate('/purchase-orders/history');
+        break;
+      case 'gr':
+        navigate('/purchases');
+        break;
+      case 'manager':
+      default:
+        navigate('/');
+        break;
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
     try {
-      await login(loginField, password);
-      // AuthProvider handles navigation on successful login
+      const user = await login(loginField, password);
       Swal.fire({
         icon: 'success',
         title: t('loginSuccessful'),
         toast: true,
         position: 'top-end',
         showConfirmButton: false,
-        timer: 3000,
+        timer: 1500,
         timerProgressBar: true,
       });
+      handleRoleBasedRedirect(user);
+
     } catch (err: any) {
       console.error("Login failed:", err);
-      const message = err.message === 'invalid_credentials' 
-          ? t('invalidEmailOrPassword') 
-          : t('loginFailed');
+      let message = t('loginFailed');
+      if(err.message === 'user_profile_not_found') {
+        message = 'User profile not found or role not assigned.';
+      } else if (err.code?.includes('auth/')) { // Firebase auth specific errors
+        message = t('invalidEmailOrPassword');
+      }
 
       setError(message);
       Swal.fire({
@@ -66,15 +92,15 @@ const LoginPage: React.FC = () => {
         
         <form onSubmit={handleSubmit} className="space-y-6">
           <Input
-            label={t('usernameOrEmail')}
-            type="text"
+            label={t('email')}
+            type="email"
             name="loginField"
             id="loginField"
             value={loginField}
             onChange={(e) => setLoginField(e.target.value)}
             required
-            autoComplete="username"
-            placeholder="username / your@email.com"
+            autoComplete="email"
+            placeholder="your@email.com"
           />
           <Input
             label={t('password')}

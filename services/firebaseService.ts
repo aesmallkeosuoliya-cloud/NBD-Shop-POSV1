@@ -4,7 +4,7 @@
 // In a typical bundled React app, you'd import from 'firebase/app' and 'firebase/database'.
 
 import { FIREBASE_CONFIG, EXPENSE_CATEGORIES, UI_COLORS, VAT_RATE } from '../constants'; 
-import { Product, Sale, Purchase, Expense, Supplier, DashboardData, SaleTransactionItem, ProductMovementLogType, ProductMovementLog, FirebaseUser, Customer, SalePayment, StoreSettings, PurchaseOrder, PurchaseOrderItem, Promotion, ExchangeRates, InternalUser, AuditLog } from '../types'; 
+import { Product, Sale, Purchase, Expense, Supplier, DashboardData, SaleTransactionItem, ProductMovementLogType, ProductMovementLog, FirebaseUser, Customer, SalePayment, StoreSettings, PurchaseOrder, PurchaseOrderItem, Promotion, ExchangeRates, AppUser, AuditLog, UserRole } from '../types'; 
 
 
 // Declare Firebase types if not automatically available from global scope.
@@ -12,13 +12,11 @@ import { Product, Sale, Purchase, Expense, Supplier, DashboardData, SaleTransact
 declare global {
   interface Window {
     firebase: any; // Adjust 'any' to specific Firebase App type if known
-    // jsPDF removed from here
   }
 }
 
 let app: any; // Firebase App instance
 let db: any; // Firebase Realtime Database service instance
-let auth: any; // Firebase Authentication service instance
 
 export const initializeFirebase = () => {
   if (typeof window.firebase === 'undefined' || typeof window.firebase.initializeApp !== 'function') {
@@ -34,18 +32,8 @@ export const initializeFirebase = () => {
 
   if (app && typeof window.firebase.database === 'function') {
     db = window.firebase.database(app);
-  } else if (app && typeof app.database === 'function') { // Fallback for some SDK structures
-    db = app.database();
   } else {
     console.error("Firebase Database SDK not found or failed to initialize.");
-  }
-
-  if (app && typeof window.firebase.auth === 'function') {
-    auth = window.firebase.auth(app);
-  } else if (app && typeof app.auth === 'function') {
-    auth = app.auth();
-  } else {
-    console.error("Firebase Authentication SDK not found or failed to initialize.");
   }
 };
 
@@ -54,7 +42,6 @@ export const initializeFirebase = () => {
 const getRef = (path: string) => {
   if (!db) {
     console.error("Firebase DB not initialized. Call initializeFirebase() first or check loading order.");
-    // Attempt to initialize if not already, though this indicates a problem if db is still null
     initializeFirebase(); 
     if (!db) throw new Error("Firebase DB failed to initialize. Cannot create reference.");
   }
@@ -99,40 +86,8 @@ const updateData = async <T,>(path: string, data: Partial<Omit<T, 'id' | 'create
   await getRef(path).update(updatePayload);
 };
 
-// --- Authentication Service ---
-export const signInWithEmailAndPassword = async (email: string, pass: string): Promise<FirebaseUser> => {
-  if (!auth) throw new Error("Firebase Auth not initialized.");
-  const userCredential = await auth.signInWithEmailAndPassword(email, pass);
-  const firebaseUser = userCredential.user;
-  return {
-    uid: firebaseUser.uid,
-    email: firebaseUser.email,
-    displayName: firebaseUser.displayName,
-  };
-};
+// --- Authentication Service (MOVED to authService.ts) ---
 
-export const signOutUser = async (): Promise<void> => {
-  if (!auth) throw new Error("Firebase Auth not initialized.");
-  await auth.signOut();
-};
-
-export const onAuthStateChangedListener = (callback: (user: FirebaseUser | null) => void): (() => void) => {
-  if (!auth) {
-    console.error("Firebase Auth not initialized. Cannot listen for auth state changes.");
-    return () => {}; // Return a no-op unsubscribe function
-  }
-  return auth.onAuthStateChanged((firebaseUser: any) => {
-    if (firebaseUser) {
-      callback({
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        displayName: firebaseUser.displayName,
-      });
-    } else {
-      callback(null);
-    }
-  });
-};
 
 // --- Audit Log Service ---
 export const addAuditLog = async (logData: Omit<AuditLog, 'id' | 'timestamp'>): Promise<string> => {
@@ -150,68 +105,67 @@ export const addAuditLog = async (logData: Omit<AuditLog, 'id' | 'timestamp'>): 
   return logId;
 };
 
-// --- Internal User System ---
-const encodePass = (pass: string) => btoa(pass);
-
-export const getInternalUsers = async (): Promise<InternalUser[]> => {
-  const snapshot = await getRef('internalUsers').get();
-  if (snapshot.exists()) {
-    const data = snapshot.val();
-    return Object.keys(data).map(key => ({ id: key, ...data[key] }));
-  }
-  return [];
+// --- User Profile Service (for roles and metadata) ---
+export const createUserProfile = async (uid: string, email: string, role: UserRole): Promise<AppUser> => {
+    const timestamp = new Date().toISOString();
+    const newUserProfileData: Omit<AppUser, 'uid'> = {
+        email,
+        role,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+    };
+    await getRef(`users/${uid}`).set(newUserProfileData);
+    addAuditLog({
+        userId: uid,
+        userLogin: email,
+        action: 'create_user_profile',
+        targetId: uid,
+        details: `User profile created for ${email} with default role '${role}' on first login.`
+    });
+    return { uid, ...newUserProfileData };
 };
 
-export const findUserByLogin = async (login: string, pass: string): Promise<InternalUser | null> => {
-    const users = await getInternalUsers();
-    const user = users.find(u => u.login.toLowerCase() === login.toLowerCase());
-    if (user && user.passwordHash === encodePass(pass)) {
-      return user;
+
+export const getUser = async (uid: string): Promise<AppUser | null> => {
+    const snapshot = await getRef(`users/${uid}`).get();
+    if (snapshot.exists()) {
+        const data = snapshot.val();
+        return { uid, ...data };
     }
     return null;
 };
 
-export const reauthenticateUser = async (login: string, pass: string): Promise<boolean> => {
-    const user = await findUserByLogin(login, pass);
-    return !!user;
+export const getUsers = async (): Promise<AppUser[]> => {
+  const snapshot = await getRef('users').get();
+  if (snapshot.exists()) {
+    const data = snapshot.val();
+    return Object.keys(data).map(uid => ({ uid, ...data[uid] }));
+  }
+  return [];
 };
 
-export const addInternalUser = async (userData: Partial<InternalUser>, password: string, actorId?: string, actorLogin?: string): Promise<string> => {
-    const users = await getInternalUsers();
-    if (users.some(u => u.login.toLowerCase() === userData.login?.toLowerCase())) {
-        throw new Error('login_exists');
-    }
-    const userId = await pushData<InternalUser>('internalUsers', {
-        login: userData.login!,
-        passwordHash: encodePass(password),
-        role: userData.role || 'sales',
-    });
-    if(actorId && actorLogin) {
-        addAuditLog({ userId: actorId, userLogin: actorLogin, action: 'create_user', targetId: userId, details: `Created user ${userData.login} with role ${userData.role}`});
-    }
-    return userId;
-};
 
-export const updateInternalUser = async (userData: InternalUser, password?: string, actorId?: string, actorLogin?: string): Promise<void> => {
-    const dataToUpdate: any = {
-        login: userData.login,
-        role: userData.role,
+export const updateUserRole = async (uid: string, role: UserRole, actorId: string, actorLogin: string): Promise<void> => {
+    const userSnapshot = await getRef(`users/${uid}`).get();
+    if (!userSnapshot.exists()) {
+        throw new Error("User not found in database to update role.");
+    }
+    const userToUpdate = userSnapshot.val();
+    const dataToUpdate = {
+        role: role,
+        updatedAt: new Date().toISOString(),
     };
-    if (password) {
-        dataToUpdate.passwordHash = encodePass(password);
-    }
-    await updateData<InternalUser>(`internalUsers/${userData.id}`, dataToUpdate);
-    if(actorId && actorLogin) {
-        addAuditLog({ userId: actorId, userLogin: actorLogin, action: 'update_user', targetId: userData.id, details: `Updated user ${userData.login}. Role: ${userData.role}. Password changed: ${password ? 'Yes' : 'No'}` });
-    }
+    await getRef(`users/${uid}`).update(dataToUpdate);
+    addAuditLog({ userId: actorId, userLogin: actorLogin, action: 'update_user_role', targetId: uid, details: `Updated role for ${userToUpdate.email} to ${role}` });
 };
 
-export const deleteInternalUser = async (id: string, actorId: string, actorLogin: string): Promise<void> => {
-    const userSnapshot = await getRef(`internalUsers/${id}`).get();
+export const deleteUser = async (uid: string, actorId: string, actorLogin: string): Promise<void> => {
+    // This only deletes the user profile from RTDB. Deleting from Firebase Auth requires Admin SDK.
+    const userSnapshot = await getRef(`users/${uid}`).get();
     if (userSnapshot.exists()) {
         const userToDelete = userSnapshot.val();
-        await getRef(`internalUsers/${id}`).remove();
-        addAuditLog({ userId: actorId, userLogin: actorLogin, action: 'delete_user', targetId: id, details: `Deleted user ${userToDelete.login}` });
+        await getRef(`users/${uid}`).remove();
+        addAuditLog({ userId: actorId, userLogin: actorLogin, action: 'delete_user', targetId: uid, details: `Deleted user profile for ${userToDelete.email}` });
     }
 };
 
@@ -334,7 +288,7 @@ export const addMultipleProducts = async (productsData: Omit<Product, 'id' | 'cr
           sellingPriceAfter: productData.sellingPrice,
           notes: "Initial stock from Excel import",
           relatedDocumentId: 'excel_import',
-          userId: auth?.currentUser?.uid,
+          userId: 'system', // TODO: Fix this if auth is available
         };
         updates[`productMovementLogs/${productId}/${logId}`] = fullLogEntry;
       }
@@ -627,7 +581,6 @@ export const addSale = async (
       updates[`${customerRefPath}/updatedAt`] = currentProcessingTimestamp; // Reflect customer record update time
     } else {
       console.warn(`Customer ${saleData.customerId} not found for updating total debt.`);
-      // Decide if sale should proceed or throw error - for now, it proceeds
     }
   }
 
@@ -685,7 +638,8 @@ export const getSales = async (): Promise<Sale[]> => {
 
 export const recordSalePaymentAndUpdateSale = async (
   saleId: string,
-  paymentDetails: Omit<SalePayment, 'id' | 'createdAt' | 'recordedBy'>
+  paymentDetails: Omit<SalePayment, 'id' | 'createdAt' | 'recordedBy'>,
+  actorId?: string,
 ): Promise<string> => {
   const updates: { [key: string]: any } = {};
   const paymentTimestamp = new Date().toISOString();
@@ -704,7 +658,7 @@ export const recordSalePaymentAndUpdateSale = async (
     ...paymentDetails,
     id: paymentId,
     createdAt: paymentTimestamp,
-    recordedBy: auth?.currentUser?.uid || undefined,
+    recordedBy: actorId,
   };
   updates[`salePayments/${saleId}/${paymentId}`] = cleanUndefinedProps(fullPaymentData);
 
@@ -730,8 +684,6 @@ export const recordSalePaymentAndUpdateSale = async (
       if (customerSnapshot.exists()) {
           const customerData: Customer = customerSnapshot.val();
           const currentTotalDebt = customerData.totalDebtAmount || 0;
-          // Reduce debt by the original outstanding amount of THIS sale,
-          // as this sale is now fully paid.
           const updatedDebt = currentTotalDebt - currentSale.outstandingAmount; 
           updates[`${customerRefPath}/totalDebtAmount`] = Math.max(0, updatedDebt);
           updates[`${customerRefPath}/updatedAt`] = paymentTimestamp;
@@ -754,7 +706,7 @@ export const getSalePayments = async (saleId: string): Promise<SalePayment[]> =>
 export const getAllSalePayments = async (): Promise<(SalePayment & {saleId: string})[]> => {
     const snapshot = await getRef('salePayments').get();
     if (snapshot.exists()) {
-        const data = snapshot.val(); // This is an object like { saleId1: { paymentId1: {...}, ... }, saleId2: {...} }
+        const data = snapshot.val(); 
         const allPayments: (SalePayment & {saleId: string})[] = [];
         for (const saleId in data) {
             const paymentsForSale = data[saleId];
@@ -828,7 +780,6 @@ export const addPurchaseAndProcess = async (
     }, updates);
   }
   
-  // Create an expense for this purchase/stock-in, based on the subtotal (cost of goods).
   const expenseDescription = expenseDescriptionTemplate.replace('{purchaseId}', purchaseInput.purchaseOrderNumber || purchaseId.substring(purchaseId.length - 6));
   const expenseData: Omit<Expense, 'id' | 'createdAt'> = {
     date: purchaseInput.purchaseDate, 
@@ -846,7 +797,6 @@ export const addPurchaseAndProcess = async (
   if (!expenseId) throw new Error("Failed to generate expense ID for purchase");
   updates[`expenses/${expenseId}`] = { ...cleanUndefinedProps(expenseData), id: expenseId, createdAt: purchaseTimestamp };
 
-  // If related to a PO, update the PO status and item received quantities
   if (purchaseInput.relatedPoId) {
     const poSnapshot = await getRef(`purchaseOrders/${purchaseInput.relatedPoId}`).get();
     if (poSnapshot.exists()) {
@@ -900,8 +850,6 @@ export const getPurchases = async (): Promise<Purchase[]> => { // Stock-In Histo
 
 export const getPurchasesByPoId = async (poId: string): Promise<Purchase[]> => {
   if (!poId) return [];
-  // Inefficiently fetches all purchases and filters on the client.
-  // The recommended fix is to add a Firebase rule: `".indexOn": "relatedPoId"` to the "purchases" path.
   const allPurchases = await getPurchases();
   return allPurchases.filter(p => p.relatedPoId === poId);
 };
@@ -953,7 +901,6 @@ export const deletePurchaseAndAssociatedRecords = async (purchaseId: string, log
     }
   }
 
-  // If this purchase was linked to a PO, revert the received quantities on the PO
   if (purchaseToDelete.relatedPoId) {
     const poSnapshot = await getRef(`purchaseOrders/${purchaseToDelete.relatedPoId}`).get();
     if (poSnapshot.exists()) {
@@ -983,7 +930,7 @@ export const deletePurchaseAndAssociatedRecords = async (purchaseId: string, log
       } else if (anyItemPartiallyReceived) {
         poToUpdate.status = 'partial';
       } else {
-        poToUpdate.status = 'pending'; // If all received quantities are now zero
+        poToUpdate.status = 'pending';
       }
       
       updates[`purchaseOrders/${purchaseToDelete.relatedPoId}/items`] = poToUpdate.items;
@@ -1170,12 +1117,12 @@ export const getDashboardSummary = async (): Promise<DashboardData> => {
 
     const totalStockValue = allProducts.reduce((sum, p) => sum + (p.stock * p.costPrice), 0);
 
-    const latestPurchases = allPurchases.slice(0, 5).map(p => ({ // These are stock-ins now
+    const latestPurchases = allPurchases.slice(0, 5).map(p => ({
         id: p.id,
-        purchaseOrderNumber: p.purchaseOrderNumber, // This can be PO number or other ref
+        purchaseOrderNumber: p.purchaseOrderNumber, 
         supplierName: p.supplierName,
         totalAmount: p.totalAmount,
-        purchaseDate: p.purchaseDate, // Stock-in date
+        purchaseDate: p.purchaseDate,
     }));
 
     const salesThisMonth = allSales.filter(s => s.transactionDate && s.transactionDate.startsWith(currentMonthISO));
@@ -1295,7 +1242,6 @@ export const clearAllProductsAndLogs = async (): Promise<void> => {
   await db.ref('/').update(updates);
 };
 
-// "Walk-in customer" is not a stored entity, so we delete all customers.
 export const clearAllCustomers = async (walkInCustomerNameToExclude?: string): Promise<void> => {
   await getRef('customers').remove();
 };
@@ -1305,4 +1251,4 @@ export const clearAllCustomers = async (walkInCustomerNameToExclude?: string): P
 initializeFirebase();
 
 // Helper to check if Firebase is initialized.
-export const isFirebaseInitialized = (): boolean => !!app && !!db && !!auth;
+export const isFirebaseInitialized = (): boolean => !!app && !!db;

@@ -199,10 +199,12 @@ const ProductsPage: React.FC = () => {
     try {
       if (editingProduct && editingProduct.id) {
         const { id, createdAt, updatedAt, profitPerUnit, ...dataToUpdate} = productData;
-        await updateProduct(editingProduct.id, dataToUpdate, currentUser.id, currentUser.login);
+        // @google/genai-api-fix: Use `currentUser.uid` and `currentUser.email` instead of `id` and `login`.
+        await updateProduct(editingProduct.id, dataToUpdate, currentUser.uid, currentUser.email);
       } else {
         const { id, createdAt, updatedAt, ...newProductData } = productData;
-        await addProduct(newProductData as Omit<Product, 'id' | 'createdAt' | 'updatedAt' | 'profitPerUnit'>, currentUser.id, currentUser.login);
+        // @google/genai-api-fix: Use `currentUser.uid` and `currentUser.email` instead of `id` and `login`.
+        await addProduct(newProductData as Omit<Product, 'id' | 'createdAt' | 'updatedAt' | 'profitPerUnit'>, currentUser.uid, currentUser.email);
       }
       Swal.fire(t('success'), t('saveSuccess'), 'success');
       setIsModalOpen(false);
@@ -295,7 +297,8 @@ const ProductsPage: React.FC = () => {
     if (result.isConfirmed) {
       setFormLoading(true);
       try {
-        await deleteMultipleProducts(Array.from(selectedProductIds), currentUser.id, currentUser.login);
+        // @google/genai-api-fix: Use `currentUser.uid` and `currentUser.email` instead of `id` and `login`.
+        await deleteMultipleProducts(Array.from(selectedProductIds), currentUser.uid, currentUser.email);
         Swal.fire(t('deleted'), t('deleteSuccess'), 'success');
         setSelectedProductIds(new Set());
         fetchData(); 
@@ -334,7 +337,8 @@ const ProductsPage: React.FC = () => {
     if (result.isConfirmed) {
         setFormLoading(true);
         try {
-            await updateMultipleProductsStatus(Array.from(selectedProductIds), false, currentUser.id, currentUser.login);
+            // @google/genai-api-fix: Use `currentUser.uid` and `currentUser.email` instead of `id` and `login`.
+            await updateMultipleProductsStatus(Array.from(selectedProductIds), false, currentUser.uid, currentUser.email);
             Swal.fire(t('success'), t('deactivateSuccess'), 'success');
             setSelectedProductIds(new Set());
             fetchData();
@@ -361,7 +365,8 @@ const ProductsPage: React.FC = () => {
     if (result.isConfirmed) {
         setFormLoading(true);
         try {
-            await updateMultipleProductsStatus(Array.from(selectedProductIds), true, currentUser.id, currentUser.login);
+            // @google/genai-api-fix: Use `currentUser.uid` and `currentUser.email` instead of `id` and `login`.
+            await updateMultipleProductsStatus(Array.from(selectedProductIds), true, currentUser.uid, currentUser.email);
             Swal.fire(t('success'), t('activateSuccess'), 'success');
             setSelectedProductIds(new Set());
             fetchData();

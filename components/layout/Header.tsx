@@ -54,8 +54,9 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, pageTitle }) => {
           <div className="flex items-center space-x-3">
             {currentUser && (
               <>
-                <span className="text-sm text-gray-600 hidden sm:block" title={currentUser.login}>
-                  {currentUser.login}
+                {/* @google/genai-api-fix: Use `currentUser.email` instead of `login`. */}
+                <span className="text-sm text-gray-600 hidden sm:block" title={currentUser.email}>
+                  {currentUser.email}
                 </span>
                 <Button 
                   onClick={handleLogout} 

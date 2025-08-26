@@ -15,29 +15,29 @@ export interface LanguageContextType {
   t: (key: TranslationKey, replacements?: Record<string, string>) => string;
 }
 
-// Add FirebaseUser for the legacy auth listener
+// Add FirebaseUser for the legacy auth listener - This can be deprecated
 export interface FirebaseUser {
   uid: string;
   email: string | null;
   displayName: string | null;
 }
 
-// --- NEW Internal User & Auth System ---
+// --- NEW App User & Auth System ---
 export type UserRole = 'admin' | 'manager' | 'sales' | 'purchasing' | 'gr';
 
-export interface InternalUser {
-  id: string;
-  login: string; // Can be username or email
-  passwordHash: string; // IMPORTANT: In a real app, this MUST be a secure hash (e.g., bcrypt)
+export interface AppUser {
+  uid: string; // Firebase Auth UID, will be the key in RTDB
+  email: string;
   role: UserRole;
+  displayName?: string; // Optional
   createdAt: string;
   updatedAt: string;
 }
 
 export interface AuthContextType {
-  currentUser: InternalUser | null;
+  currentUser: AppUser | null;
   loading: boolean;
-  login: (login: string, pass: string) => Promise<InternalUser>;
+  login: (email: string, pass: string) => Promise<AppUser>;
   logout: () => Promise<void>;
   hasPermission: (allowedRoles: UserRole[]) => boolean;
 }
@@ -51,7 +51,7 @@ export interface AuditLog {
   targetId?: string; // e.g., saleId, productId, userId
   details?: string; // e.g., "Updated stock from 10 to 5"
 }
-// --- END NEW Internal User & Auth System ---
+// --- END NEW App User & Auth System ---
 
 export interface Customer {
   id: string;
