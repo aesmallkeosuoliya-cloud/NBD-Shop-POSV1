@@ -2,7 +2,7 @@
 // In a typical bundled React app, you'd import from 'firebase/app' and 'firebase/database'.
 
 import { FIREBASE_CONFIG, EXPENSE_CATEGORIES, UI_COLORS, VAT_RATE } from '../constants'; 
-import { Product, Sale, Purchase, Expense, Supplier, DashboardData, SaleTransactionItem, ProductMovementLogType, ProductMovementLog, FirebaseUser, Customer, SalePayment, StoreSettings, PurchaseOrder, PurchaseOrderItem, Promotion, ExchangeRates, AppUser, AuditLog, UserRole, InternalUser, ChartData, LatestPurchaseInfo, TopSellingProductInfo } from '../types'; 
+import { Product, Sale, Purchase, Expense, Supplier, DashboardData, SaleTransactionItem, ProductMovementLogType, ProductMovementLog, FirebaseUser, Customer, SalePayment, StoreSettings, PurchaseOrder, PurchaseOrderItem, Promotion, ExchangeRates, AppUser, AuditLog, UserRole, InternalUser, ChartData, LatestPurchaseInfo, TopSellingProductInfo, PurchasePayment, PurchasePaidStatus } from '../types'; 
 
 
 // Declare Firebase types if not automatically available from global scope.
@@ -597,6 +597,125 @@ export const deletePurchase = async (purchaseId: string): Promise<void> => {
     // ... (Implementation for deleting purchase, reversing stock, deleting related expense)
 }
 
+// --- NEW Purchase Payment Services ---
+export const getPurchasePayments = (purchaseId: string): Promise<PurchasePayment[]> => getData<PurchasePayment>(`purchasePayments/${purchaseId}`);
+
+export const recordPurchasePayment = async (
+  purchaseId: string,
+  paymentData: Omit<PurchasePayment, 'id' | 'purchaseId' | 'createdAt' | 'isCancelled' | 'officerId' | 'officerName'>,
+  userDetails: { officerId: string; officerName: string }
+): Promise<void> => {
+  const purchaseRef = getRef(`purchases/${purchaseId}`);
+  const purchaseSnapshot = await purchaseRef.get();
+  if (!purchaseSnapshot.exists()) {
+    throw new Error("Purchase record not found.");
+  }
+  const purchase: Purchase = { id: purchaseId, ...purchaseSnapshot.val() };
+  const outstandingAmount = purchase.outstanding ?? purchase.grandTotal;
+
+  if (paymentData.payAmount > outstandingAmount) {
+      throw new Error("Payment amount cannot exceed outstanding balance.");
+  }
+
+  const updates: { [key: string]: any } = {};
+  const timestamp = new Date().toISOString();
+  
+  const newPaymentRef = getRef(`purchasePayments/${purchaseId}`).push();
+  const paymentId = newPaymentRef.key;
+  if (!paymentId) throw new Error("Could not generate payment ID.");
+
+  const fullPaymentData: PurchasePayment = {
+    ...paymentData,
+    id: paymentId,
+    purchaseId,
+    officerId: userDetails.officerId,
+    officerName: userDetails.officerName,
+    createdAt: timestamp,
+    isCancelled: false,
+  };
+  updates[`purchasePayments/${purchaseId}/${paymentId}`] = fullPaymentData;
+
+  const currentPaidAmount = purchase.paidAmount || 0;
+  const newPaidAmount = currentPaidAmount + paymentData.payAmount;
+  const newOutstanding = purchase.grandTotal - newPaidAmount;
+  
+  let newStatus: PurchasePaidStatus = 'partial';
+  if (newOutstanding <= 0.01) { 
+    newStatus = 'paid';
+  }
+
+  updates[`purchases/${purchaseId}/paidAmount`] = newPaidAmount;
+  updates[`purchases/${purchaseId}/outstanding`] = newOutstanding;
+  updates[`purchases/${purchaseId}/paidStatus`] = newStatus;
+  updates[`purchases/${purchaseId}/updatedAt`] = timestamp;
+  updates[`purchases/${purchaseId}/updateOfficerId`] = userDetails.officerId;
+  updates[`purchases/${purchaseId}/updateOfficerName`] = userDetails.officerName;
+  
+  await db.ref('/').update(updates);
+};
+
+export const cancelPurchasePayment = async (
+  purchaseId: string,
+  paymentId: string,
+  userDetails: { officerId: string; officerName: string }
+): Promise<void> => {
+    const paymentsSnapshot = await getRef(`purchasePayments/${purchaseId}`).get();
+    const purchaseSnapshot = await getRef(`purchases/${purchaseId}`).get();
+    
+    if (!paymentsSnapshot.exists() || !purchaseSnapshot.exists()) {
+        throw new Error("Purchase or payment data not found.");
+    }
+    
+    const allPayments: Record<string, PurchasePayment> = paymentsSnapshot.val();
+    const paymentToCancel = allPayments[paymentId];
+    if (!paymentToCancel || paymentToCancel.isCancelled) {
+        throw new Error("Payment not found or already cancelled.");
+    }
+    
+    const purchase: Purchase = { id: purchaseId, ...purchaseSnapshot.val() };
+    
+    const updates: { [key: string]: any } = {};
+    const timestamp = new Date().toISOString();
+
+    updates[`purchasePayments/${purchaseId}/${paymentId}/isCancelled`] = true;
+
+    let newPaidAmount = 0;
+    for (const key in allPayments) {
+        if (key !== paymentId && !allPayments[key].isCancelled) {
+            newPaidAmount += allPayments[key].payAmount;
+        }
+    }
+
+    const newOutstanding = purchase.grandTotal - newPaidAmount;
+    let newStatus: PurchasePaidStatus = 'unpaid';
+    if (newPaidAmount > 0.01) {
+        newStatus = newOutstanding <= 0.01 ? 'paid' : 'partial';
+    }
+
+    updates[`purchases/${purchaseId}/paidAmount`] = newPaidAmount;
+    updates[`purchases/${purchaseId}/outstanding`] = newOutstanding;
+    updates[`purchases/${purchaseId}/paidStatus`] = newStatus;
+    updates[`purchases/${purchaseId}/updatedAt`] = timestamp;
+    updates[`purchases/${purchaseId}/updateOfficerId`] = userDetails.officerId;
+    updates[`purchases/${purchaseId}/updateOfficerName`] = userDetails.officerName;
+
+    await db.ref('/').update(updates);
+}
+
+export const softDeletePurchase = async (purchaseId: string, userDetails: { officerId: string; officerName: string }): Promise<void> => {
+  const updates: { [key: string]: any } = {};
+  const timestamp = new Date().toISOString();
+  
+  updates[`purchases/${purchaseId}/isDeleted`] = true;
+  updates[`purchases/${purchaseId}/updatedAt`] = timestamp;
+  updates[`purchases/${purchaseId}/updateOfficerId`] = userDetails.officerId;
+  updates[`purchases/${purchaseId}/updateOfficerName`] = userDetails.officerName;
+  
+  await db.ref('/').update(updates);
+  addAuditLog({ userId: userDetails.officerId, userLogin: userDetails.officerName, action: 'soft_delete_purchase', targetId: purchaseId });
+};
+
+
 // --- Expense Service ---
 export const getExpenses = (): Promise<Expense[]> => getData<Expense>('expenses');
 export const addExpense = (data: Omit<Expense, 'id' | 'createdAt'>, userId: string, userLogin: string): Promise<string> => {
@@ -728,7 +847,8 @@ export const getDashboardSummary = async (): Promise<DashboardData> => {
       id: p.id,
       purchaseOrderNumber: p.purchaseOrderNumber,
       supplierName: p.supplierName,
-      totalAmount: p.totalAmount,
+// @google/genai-api-fix: Replaced deprecated 'totalAmount' with 'grandTotal' to align with the Purchase type definition.
+      totalAmount: p.grandTotal,
       purchaseDate: p.purchaseDate,
     }));
 

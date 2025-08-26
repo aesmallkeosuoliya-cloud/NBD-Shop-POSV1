@@ -178,13 +178,15 @@ const AccountsPayableAgingReportPage: React.FC = () => {
         invoiceDate: purchase.purchaseDate,
         dueDate: dueDate.toISOString(),
         creditDays: creditDays,
-        amount: purchase.totalAmount,
-        outstanding: purchase.totalAmount, // Assuming full amount is outstanding
+// @google/genai-api-fix: Replaced deprecated 'totalAmount' with 'grandTotal' to align with the Purchase type definition.
+        amount: purchase.grandTotal,
+        outstanding: purchase.grandTotal, // Assuming full amount is outstanding
         agingDays: agingDays,
       });
       
       summary.billCount += 1;
-      summary.totalOutstanding += purchase.totalAmount;
+// @google/genai-api-fix: Replaced deprecated 'totalAmount' with 'grandTotal' to align with the Purchase type definition.
+      summary.totalOutstanding += purchase.grandTotal;
     }
     
     let filteredData = Array.from(summaryMap.values());

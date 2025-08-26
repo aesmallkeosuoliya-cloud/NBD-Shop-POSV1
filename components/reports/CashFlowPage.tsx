@@ -72,7 +72,8 @@ const CashFlowPage: React.FC = () => {
       const manualExpensesBefore = expenses.filter(e => new Date(e.date) < start && !e.relatedPurchaseId);
       
       const cashInBefore = cashSalesBefore.reduce((sum, s) => sum + s.grandTotal, 0) + creditPaymentsBefore.reduce((sum, p) => sum + p.amountPaid, 0);
-      const cashOutBefore = cashPurchasesBefore.reduce((sum, p) => sum + p.totalAmount, 0) + manualExpensesBefore.reduce((sum, e) => sum + e.amount, 0);
+// @google/genai-api-fix: Replaced deprecated 'totalAmount' with 'grandTotal' to align with the Purchase type definition.
+      const cashOutBefore = cashPurchasesBefore.reduce((sum, p) => sum + p.grandTotal, 0) + manualExpensesBefore.reduce((sum, e) => sum + e.amount, 0);
       const beginningCashBalance = cashInBefore - cashOutBefore;
       
       // --- Calculate Flows for the selected period ---
@@ -82,7 +83,8 @@ const CashFlowPage: React.FC = () => {
       const manualExpensesInPeriod = expenses.filter(e => new Date(e.date) >= start && new Date(e.date) <= end && !e.relatedPurchaseId);
       
       const cashReceiptsFromSales = cashSalesInPeriod.reduce((sum, s) => sum + s.grandTotal, 0) + creditPaymentsInPeriod.reduce((sum, p) => sum + p.amountPaid, 0);
-      const cashPaymentsForInventory = cashPurchasesInPeriod.reduce((sum, p) => sum + p.totalAmount, 0);
+// @google/genai-api-fix: Replaced deprecated 'totalAmount' with 'grandTotal' to align with the Purchase type definition.
+      const cashPaymentsForInventory = cashPurchasesInPeriod.reduce((sum, p) => sum + p.grandTotal, 0);
       const cashPaymentsForExpenses = manualExpensesInPeriod.reduce((sum, e) => sum + e.amount, 0);
       
       const netCashFromOperating = cashReceiptsFromSales - cashPaymentsForInventory - cashPaymentsForExpenses;
@@ -110,7 +112,8 @@ const CashFlowPage: React.FC = () => {
 
       cashSalesInPeriod.forEach(s => { const d = s.transactionDate.split('T')[0]; dailyChanges.set(d, (dailyChanges.get(d) || 0) + s.grandTotal); });
       creditPaymentsInPeriod.forEach(p => { const d = p.paymentDate.split('T')[0]; dailyChanges.set(d, (dailyChanges.get(d) || 0) + p.amountPaid); });
-      cashPurchasesInPeriod.forEach(p => { const d = p.purchaseDate.split('T')[0]; dailyChanges.set(d, (dailyChanges.get(d) || 0) - p.totalAmount); });
+// @google/genai-api-fix: Replaced deprecated 'totalAmount' with 'grandTotal' to align with the Purchase type definition.
+      cashPurchasesInPeriod.forEach(p => { const d = p.purchaseDate.split('T')[0]; dailyChanges.set(d, (dailyChanges.get(d) || 0) - p.grandTotal); });
       manualExpensesInPeriod.forEach(e => { const d = e.date.split('T')[0]; dailyChanges.set(d, (dailyChanges.get(d) || 0) - e.amount); });
       
       let currentBalance = beginningCashBalance;

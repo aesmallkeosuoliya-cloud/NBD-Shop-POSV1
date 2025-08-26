@@ -93,11 +93,13 @@ const FinancialDashboardPage: React.FC = () => {
             // --- Cash Balance ---
             const startOfPeriod = new Date(year, month - 1, 1);
             const cashInBefore = sales.filter(s => s.transactionDate && new Date(s.transactionDate) < startOfPeriod && s.paymentMethod !== 'credit').reduce((sum, s) => sum + s.grandTotal, 0) + salePayments.filter(p => p.paymentDate && new Date(p.paymentDate) < startOfPeriod).reduce((sum, p) => sum + p.amountPaid, 0);
-            const cashOutBefore = purchases.filter(p => p.purchaseDate && new Date(p.purchaseDate) < startOfPeriod && p.paymentMethod !== 'credit').reduce((sum, p) => sum + p.totalAmount, 0) + expenses.filter(e => e.date && new Date(e.date) < startOfPeriod && !e.relatedPurchaseId).reduce((sum, e) => sum + e.amount, 0);
+// @google/genai-api-fix: Replaced deprecated 'totalAmount' with 'grandTotal' to align with the Purchase type definition.
+            const cashOutBefore = purchases.filter(p => p.purchaseDate && new Date(p.purchaseDate) < startOfPeriod && p.paymentMethod !== 'credit').reduce((sum, p) => sum + p.grandTotal, 0) + expenses.filter(e => e.date && new Date(e.date) < startOfPeriod && !e.relatedPurchaseId).reduce((sum, e) => sum + e.amount, 0);
             const beginningCashBalance = cashInBefore - cashOutBefore;
 
             const cashInPeriod = periodSales.filter(s => s.paymentMethod !== 'credit').reduce((sum, s) => sum + s.grandTotal, 0) + salePayments.filter(p => p.paymentDate && p.paymentDate.startsWith(selectedDate)).reduce((sum, p) => sum + p.amountPaid, 0);
-            const cashOutPeriod = purchases.filter(p => p.purchaseDate && p.purchaseDate.startsWith(selectedDate) && p.paymentMethod !== 'credit').reduce((sum, p) => sum + p.totalAmount, 0) + periodExpenses.filter(e => !e.relatedPurchaseId).reduce((sum, e) => sum + e.amount, 0);
+// @google/genai-api-fix: Replaced deprecated 'totalAmount' with 'grandTotal' to align with the Purchase type definition.
+            const cashOutPeriod = purchases.filter(p => p.purchaseDate && p.purchaseDate.startsWith(selectedDate) && p.paymentMethod !== 'credit').reduce((sum, p) => sum + p.grandTotal, 0) + periodExpenses.filter(e => !e.relatedPurchaseId).reduce((sum, e) => sum + e.amount, 0);
             const endingCashBalance = beginningCashBalance + cashInPeriod - cashOutPeriod;
             
             // --- Monthly Chart Data ---

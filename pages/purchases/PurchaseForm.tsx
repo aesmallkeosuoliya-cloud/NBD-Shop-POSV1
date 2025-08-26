@@ -346,7 +346,8 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, isLoadi
       taxRate: taxRateValue,
       taxAmount,
       subtotal,
-      totalAmount
+// @google/genai-api-fix: Replaced deprecated 'totalAmount' with 'grandTotal' to align with the Purchase type definition.
+      grandTotal: totalAmount
     };
     await onSubmit(purchaseData);
   };
@@ -467,7 +468,8 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, isLoadi
                   <tr key={purchase.id}>
                     <td className="px-2 py-2 whitespace-nowrap">{new Date(purchase.purchaseDate).toLocaleDateString()}</td>
                     <td className="px-2 py-2 whitespace-nowrap">{purchase.purchaseOrderNumber || '-'}</td>
-                    <td className="px-2 py-2 text-right font-medium">{formatCurrency(purchase.totalAmount)}</td>
+                    {/* @google/genai-api-fix: Replaced deprecated 'totalAmount' with 'grandTotal' to align with the Purchase type definition. */}
+                    <td className="px-2 py-2 text-right font-medium">{formatCurrency(purchase.grandTotal)}</td>
                     <td className="px-2 py-2">{purchase.notes || '-'}</td>
                   </tr>
                 ))}

@@ -232,31 +232,54 @@ export interface PurchaseItemDetail { // This is for Stock-In page
   quantityPreviouslyReceived?: number; // New field for PO context
 }
 
-export interface Purchase { // This is a Stock-In document
+export type PurchasePaidStatus = 'unpaid' | 'partial' | 'paid';
+
+export interface Purchase {
   id: string;
-  purchaseDate: string; // ISO Date string (Stock-in date)
+  docNo?: string;
+  invoiceNo?: string;
+  purchaseDate: string;
   supplierId?: string;
   supplierName?: string;
-  purchaseCategory: string; // E.g., "Stock-In from PO", "Manual Stock-In"
-  purchaseOrderNumber?: string; // Can be the PO number if related
-  relatedPoId?: string; // Link to the PurchaseOrder ID
+  purchaseCategory: string;
+  purchaseOrderNumber?: string;
+  relatedPoId?: string;
   items: PurchaseItemDetail[];
   paymentMethod?: 'credit' | 'cash' | 'transfer';
-  userId?: string; // For audit trail
-
   currency: 'LAK' | 'THB' | 'USD';
   exchangeRate: number;
   taxType: 'exempt' | 'calculate';
-  taxRate: number; // e.g. 7 for 7%
+  taxRate: number;
   taxAmount: number;
-  subtotal: number; // total before tax, in base currency (LAK)
-  totalAmount: number; // grand total (subtotal + taxAmount), in base currency (LAK)
-  
+  subtotal: number;
+  grandTotal: number; // Replaces totalAmount for clarity
+  creditDays?: number;
+  dueDate?: string;
+  paidAmount?: number;
+  outstanding?: number;
+  paidStatus?: PurchasePaidStatus;
   notes?: string;
-  createdAt: string; // ISO Date string
-  updatedAt: string; // ISO Date string
+  createdAt: string;
+  updatedAt: string;
+  createOfficerId?: string;
+  createOfficerName?: string;
+  updateOfficerId?: string;
+  updateOfficerName?: string;
+  isDeleted?: boolean;
 }
 
+export interface PurchasePayment {
+  id: string;
+  purchaseId: string;
+  payDate: string;
+  payAmount: number;
+  method: 'cash' | 'transfer' | 'cheque' | 'other';
+  remark?: string;
+  officerId: string;
+  officerName: string;
+  createdAt: string;
+  isCancelled?: boolean;
+}
 
 export type PurchaseOrderStatus = 'pending' | 'partial' | 'received';
 

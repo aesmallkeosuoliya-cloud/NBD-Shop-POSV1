@@ -77,8 +77,9 @@ const PurchasesPage: React.FC = () => {
       
       // NEW: Pass user details for audit trail
       // @google/genai-api-fix: Use `currentUser.uid` and `currentUser.email` instead of `id` and `login`.
+// @google/genai-api-fix: Replaced non-existent 'userId' with 'createOfficerId' and 'createOfficerName' to match the Purchase type.
       await addPurchaseAndProcess(
-        { ...purchaseData, userId: currentUser.uid },
+        { ...purchaseData, createOfficerId: currentUser.uid, createOfficerName: currentUser.email },
         expenseCategoryText, 
         expenseDescriptionTemplate, 
         costAccountingCategoryName,
