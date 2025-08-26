@@ -120,28 +120,34 @@
     .po-print-summary td { padding: 4px; }
     .po-print-footer { margin-top: 30px; padding-top: 10px; border-top: 1px solid #ccc; font-size: 9pt; }
     
-    /* GRN Simple Print Styles */
-    .grn-simple-container { color: #000; background: #fff; font-size: 10pt; font-family: 'Phetsarath OT', 'Noto Sans Lao', sans-serif !important; padding: 5mm; }
-    .grn-simple-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #000; }
-    .grn-simple-header-left { flex: 1; }
-    .grn-simple-header-left .store-name { font-size: 12pt; font-weight: bold; }
-    .grn-simple-header-left p { font-size: 9pt; margin: 2px 0; }
-    .grn-simple-header-right { flex: 1; text-align: right; }
-    .grn-simple-header-right h1 { font-size: 16pt; font-weight: bold; margin-bottom: 10px; }
-    .grn-simple-header-right p { font-size: 9pt; margin: 2px 0; }
-    .grn-simple-supplier-info { border: 1px solid #999; padding: 8px; margin-bottom: 15px; }
-    .grn-simple-items-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 10pt; }
-    .grn-simple-items-table th, .grn-simple-items-table td { border: 1px solid #000; padding: 6px; text-align: left; }
-    .grn-simple-items-table th { background-color: #f0f0f0; }
-    .grn-simple-items-table .text-right { text-align: right; }
-    .grn-simple-footer { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 20px; }
-    .grn-simple-footer-notes { width: 50%; font-size: 9pt; }
-    .grn-simple-footer-summary { width: 40%; }
-    .grn-simple-summary-table { width: 100%; font-size: 11pt; }
-    .grn-simple-summary-table td { padding: 4px; }
-    .grn-simple-summary-table .summary-label { text-align: right; font-weight: bold; }
-    .grn-simple-summary-table .summary-value { text-align: right; border-bottom: 1px solid #000; padding-right: 5px; }
-    .grn-simple-summary-table .grand-total .summary-value { border-bottom: 3px double #000; }
+    /* GRN v2 (NBD/TCR Style) Print Styles */
+    .grn-v2-container { color: #000; background: #fff; font-size: 10pt; font-family: 'Phetsarath OT', 'Noto Sans Lao', sans-serif !important; padding: 10mm; width: 210mm; min-height: 297mm; box-sizing: border-box; }
+    .grn-v2-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 10px; margin-bottom: 10px; }
+    .grn-v2-header-left { flex: 1.5; }
+    .grn-v2-header-left .store-name { font-size: 16pt; font-weight: bold; }
+    .grn-v2-header-left p { font-size: 9pt; margin: 2px 0; }
+    .grn-v2-header-right { flex: 1; text-align: right; }
+    .grn-v2-header-right h1 { font-size: 20pt; font-weight: bold; margin: 0; }
+    .grn-v2-doc-info { display: flex; justify-content: space-between; font-size: 9pt; line-height: 1.5; }
+    .grn-v2-supplier-info { margin-top: 10px; margin-bottom: 15px; font-size: 10pt; line-height: 1.6; }
+    .grn-v2-items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10pt; }
+    .grn-v2-items-table th, .grn-v2-items-table td { border: 1px solid #000; padding: 5px 8px; text-align: left; }
+    .grn-v2-items-table th { background-color: #f0f0f0; text-align: center; }
+    .grn-v2-items-table .text-right { text-align: right; }
+    .grn-v2-items-table .text-center { text-align: center; }
+    .grn-v2-footer { margin-top: 20px; display: flex; justify-content: space-between; align-items: flex-start; }
+    .grn-v2-footer-left { width: 60%; }
+    .grn-v2-footer-right { width: 35%; }
+    .grn-v2-words-box { border: 1px solid #000; padding: 8px; min-height: 40px; text-align: center; font-weight: bold; margin-bottom: 10px; }
+    .grn-v2-notes { font-size: 9pt; }
+    .grn-v2-summary-table { width: 100%; font-size: 11pt; border-collapse: collapse; }
+    .grn-v2-summary-table td { padding: 6px; }
+    .grn-v2-summary-table .summary-label { text-align: right; font-weight: bold; padding-right: 15px; }
+    .grn-v2-summary-table .summary-value { text-align: right; font-weight: bold; border-bottom: 1px solid #000; }
+    .grn-v2-summary-table .grand-total .summary-value { border-bottom: 3px double #000; }
+    .grn-v2-signatures { margin-top: 80px; display: flex; justify-content: space-around; font-size: 10pt; text-align: center; }
+    .grn-v2-signatures > div { width: 40%; }
+    .grn-v2-signatures .signature-line { border-bottom: 1px dotted #000; margin-bottom: 5px; }
 
 
     /* Stock Movement Report Print Styles */

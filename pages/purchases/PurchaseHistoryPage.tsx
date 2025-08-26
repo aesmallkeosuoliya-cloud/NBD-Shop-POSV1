@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { getPurchases, getSuppliers, isFirebaseInitialized, softDeletePurchase, recordPurchasePayment, getPurchasePayments, cancelPurchasePayment, getStoreSettings } from '../../services/firebaseService';
+import { getPurchases, getSuppliers, isFirebaseInitialized, softDeletePurchase, recordPurchasePayment, getPurchasePayments, cancelPurchasePayment, getStoreSettings, getProducts } from '../../services/firebaseService';
 import Input from '../../components/common/Input';
 import Card from '../../components/common/Card';
 import { UI_COLORS, PURCHASE_PAYMENT_METHODS_OPTIONS, DEFAULT_STORE_SETTINGS } from '../../constants';
@@ -26,6 +26,8 @@ export const PurchaseHistoryPage: React.FC = () => {
   const [allPurchases, setAllPurchases] = useState<Purchase[]>([]);
   const [filteredPurchases, setFilteredPurchases] = useState<Purchase[]>([]);
   const [storeSettings, setStoreSettings] = useState<StoreSettings>(DEFAULT_STORE_SETTINGS);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [allSuppliers, setAllSuppliers] = useState<Supplier[]>([]);
   
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(null);
@@ -57,12 +59,16 @@ export const PurchaseHistoryPage: React.FC = () => {
   const fetchData = useCallback(async () => {
     if (!isFirebaseInitialized()) return;
     try {
-      const [fetchedPurchases, fetchedSettings] = await Promise.all([
+      const [fetchedPurchases, fetchedSettings, fetchedProducts, fetchedSuppliers] = await Promise.all([
         getPurchases(), 
         getStoreSettings(),
+        getProducts(),
+        getSuppliers(),
       ]);
       setAllPurchases(fetchedPurchases.filter(p => !p.isDeleted));
       setStoreSettings(fetchedSettings || DEFAULT_STORE_SETTINGS);
+      setAllProducts(fetchedProducts);
+      setAllSuppliers(fetchedSuppliers);
     } catch (error) {
       console.error("Error fetching purchase history:", error);
       Swal.fire(t('error'), t('errorOccurred'), 'error');
@@ -166,10 +172,15 @@ export const PurchaseHistoryPage: React.FC = () => {
         grnPrintAreaRootRef.current = createRoot(printAreaContainer);
     }
     
+    const supplierDetails = allSuppliers.find(s => s.id === selectedPurchase.supplierId);
+    const productMap = new Map(allProducts.map(p => [p.id, p]));
+
     grnPrintAreaRootRef.current.render(
       <PrintableGRN
         purchase={selectedPurchase}
         settings={storeSettings}
+        supplier={supplierDetails || null}
+        productMap={productMap}
         t={t}
         formatCurrency={formatCurrency}
         formatDate={(iso) => new Date(iso).toLocaleDateString(localeForFormatting)}
@@ -257,7 +268,7 @@ export const PurchaseHistoryPage: React.FC = () => {
         <Button size="sm" variant="ghost" disabled={!selectedPurchaseId} leftIcon={<DeleteIcon />} onClick={handleDelete}>{t('delete')}</Button>
         <Button size="sm" variant="ghost" disabled={!selectedPurchaseId || selectedPurchase?.paidStatus === 'paid'} leftIcon={<PayIcon />} onClick={handlePayClick}>{t('actionPay')}</Button>
         <Button size="sm" variant="ghost" disabled={!selectedPurchaseId || !['partial', 'paid'].includes(selectedPurchase?.paidStatus || '')} onClick={() => setActiveDetailTab('payments')}>{t('actionCancelPay')}</Button>
-        <Button size="sm" variant="ghost" disabled={!selectedPurchaseId} leftIcon={<PrintIcon />} onClick={handlePrint}>{t('print')}</Button>
+        <Button size="sm" variant="ghost" disabled={!selectedPurchaseId} leftIcon={<PrintIcon />} onClick={handlePrint}>{t('printReport')}</Button>
         <Button size="sm" variant="ghost" disabled={true}>{t('printReport')}</Button>
       </div>
 
@@ -401,47 +412,120 @@ const PayModal: React.FC<{purchase: Purchase, onClose: () => void, onSuccess: ()
 const PrintableGRN: React.FC<{
   purchase: Purchase;
   settings: StoreSettings;
+  supplier: Supplier | null;
+  productMap: Map<string, Product>;
   t: (key: string, replacements?: Record<string, string>) => string;
   formatCurrency: (value: number) => string;
   formatDate: (isoDate: string) => string;
-}> = ({ purchase, settings, t, formatCurrency, formatDate }) => {
+}> = ({ purchase, settings, supplier, productMap, t, formatCurrency, formatDate }) => {
     
+    const numberToLaoWords = useCallback((num: number): string => {
+        if (num === null || num === undefined) return t('noDataFound');
+        const numStr = String(num.toFixed(2));
+        const [integerPartStr, fractionalPartStr] = numStr.split('.');
+        
+        const digits = ['ສູນ', 'ໜຶ່ງ', 'ສອງ', 'ສາມ', 'ສີ່', 'ຫ້າ', 'ຫົກ', 'ເຈັດ', 'ແປດ', 'ເກົ້າ'];
+        const units = ['', 'ສິບ', 'ຮ້ອຍ', 'ພັນ', 'ໝື່ນ', 'ແສນ', 'ລ້ານ'];
+
+        const convertInteger = (nStr: string): string => {
+            let result = '';
+            const len = nStr.length;
+            if (len === 0) return '';
+            if (len === 1 && nStr === '0') return digits[0];
+
+            for (let i = 0; i < len; i++) {
+                const digit = parseInt(nStr[i]);
+                const pos = len - 1 - i;
+                if (digit === 0) continue;
+                
+                if (pos % 6 === 0 && pos > 0) {
+                    result += convertInteger(nStr.substring(0, i + 1)) + units[6];
+                    const remaining = nStr.substring(i + 1);
+                    if (parseInt(remaining) > 0) result += convertInteger(remaining);
+                    return result;
+                }
+                
+                if (pos % 6 === 1) {
+                    if (digit === 2) result += 'ຊາວ';
+                    else if (digit === 1) result += 'ສິບ';
+                    else result += digits[digit] + units[1];
+                } else if (pos > 0) {
+                    result += digits[digit] + units[pos % 6];
+                } else {
+                    if (digit === 1 && len > 1 && nStr[len-2] !== '0') result += 'ເອັດ';
+                    else result += digits[digit];
+                }
+            }
+            return result;
+        }
+
+        const integerWords = convertInteger(integerPartStr);
+        const fractionalPart = parseInt(fractionalPartStr);
+        const fractionalWords = fractionalPart > 0 ? convertInteger(fractionalPart.toString()) : '';
+
+        let finalResult = `${integerWords || digits[0]} ${t('kip')}`;
+        if (fractionalPart > 0) {
+            finalResult += ` ${fractionalWords} ${t('att')}`;
+        } else {
+            finalResult += 'ຖ້ວນ'; // "even"
+        }
+        return finalResult.trim();
+    }, [t]);
+
+
     return (
-    <div className="grn-simple-container">
-      <header className="grn-simple-header">
-        <div className="grn-simple-header-left">
+    <div className="grn-v2-container">
+      <header className="grn-v2-header">
+        <div className="grn-v2-header-left">
             <p className="store-name">{settings.storeName}</p>
             <p>{settings.address}</p>
             <p>{t('phoneLabel')}: {settings.phone}</p>
         </div>
-        <div className="grn-simple-header-right">
-             <h1>{t('purchases')}</h1>
-             <p><strong>{t('docNo')}:</strong> {purchase.docNo || purchase.id.slice(-6)}</p>
-             <p><strong>{t('purchaseDate')}:</strong> {formatDate(purchase.purchaseDate)}</p>
-             <p><strong>{t('poDocNo')}:</strong> {purchase.purchaseOrderNumber || '-'}</p>
+        <div className="grn-v2-header-right">
+             <h1>{t('purchaseBillTitle')}</h1>
+             <div className="grn-v2-doc-info">
+                <div>
+                    <p><strong>{t('docNo')}:</strong></p>
+                    <p><strong>{t('invoiceNo')}:</strong></p>
+                    <p><strong>{t('date')}:</strong></p>
+                    <p><strong>{t('creditTerm')}:</strong></p>
+                </div>
+                 <div>
+                    <p>{purchase.docNo || purchase.id.slice(-6)}</p>
+                    <p>{purchase.invoiceNo || '-'}</p>
+                    <p>{formatDate(purchase.purchaseDate)}</p>
+                    <p>{purchase.creditDays || 0} {t('days')}</p>
+                 </div>
+             </div>
         </div>
       </header>
       
-      <div className="grn-simple-supplier-info">
-        <strong>{t('supplier')}:</strong> {purchase.supplierName || t('unknown')}
+      <div className="grn-v2-supplier-info">
+        <strong>{t('distributorLabel')}:</strong> {purchase.supplierName || t('unknown')}<br/>
+        <strong>{t('addressLabel')}:</strong> {supplier?.taxInfo || '-'}<br/>
+        <strong>{t('telLabel')}:</strong> {supplier?.phone || '-'}
       </div>
       
-      <table className="grn-simple-items-table">
+      <table className="grn-v2-items-table">
         <thead>
           <tr>
-            <th>#</th>
-            <th>{t('productName')}</th>
-            <th className="text-right">{t('quantity')}</th>
-            <th className="text-right">{t('costPricePerUnitLAK')}</th>
-            <th className="text-right">{t('totalAmountLAK')}</th>
+            <th style={{width: '5%'}}>{t('table_no')}</th>
+            <th style={{width: '15%'}}>{t('table_barcode')}</th>
+            <th>{t('table_item_desc')}</th>
+            <th style={{width: '10%'}}>{t('table_qty')}</th>
+            <th style={{width: '10%'}}>{t('table_unit')}</th>
+            <th style={{width: '12%'}}>{t('table_unit_price')}</th>
+            <th style={{width: '15%'}}>{t('table_total_price')}</th>
           </tr>
         </thead>
         <tbody>
           {purchase.items.map((item, index) => (
             <tr key={item.productId + index}>
-              <td>{index + 1}</td>
+              <td className="text-center">{index + 1}</td>
+              <td className="text-center">{productMap.get(item.productId)?.barcode || '-'}</td>
               <td>{item.productName}</td>
-              <td className="text-right">{item.quantity}</td>
+              <td className="text-center">{item.quantity}</td>
+              <td className="text-center">{productMap.get(item.productId)?.unit || '-'}</td>
               <td className="text-right">{formatCurrency(item.buyPrice)}</td>
               <td className="text-right">{formatCurrency(item.buyPrice * item.quantity)}</td>
             </tr>
@@ -449,25 +533,43 @@ const PrintableGRN: React.FC<{
         </tbody>
       </table>
       
-       <div className="grn-simple-footer">
-          <div className="grn-simple-footer-notes">
-            <strong>{t('notes')}:</strong>
-            <p style={{ margin: 0 }}>{purchase.notes || '-'}</p>
+       <div className="grn-v2-footer">
+          <div className="grn-v2-footer-left">
+             <div className="grn-v2-words-box">
+                {numberToLaoWords(purchase.grandTotal)}
+             </div>
+             <div className="grn-v2-notes">
+                <strong>{t('notes')}:</strong> {purchase.notes || '-'}
+             </div>
           </div>
-          <div className="grn-simple-footer-summary">
-             <table className="grn-simple-summary-table">
+          <div className="grn-v2-footer-right">
+             <table className="grn-v2-summary-table">
                  <tbody>
                      <tr>
-                        <td className="summary-label">{t('subtotal')}:</td>
+                        <td className="summary-label">{t('totalAmountAll')}:</td>
                         <td className="summary-value">{formatCurrency(purchase.subtotal)}</td>
                      </tr>
+                      <tr>
+                        <td className="summary-label">{t('endOfBillDiscount')}:</td>
+                        <td className="summary-value">{formatCurrency(0)}</td>
+                     </tr>
                      <tr className="grand-total">
-                        <td className="summary-label">{t('grandTotal')}:</td>
+                        <td className="summary-label">{t('grandTotalNet')}:</td>
                         <td className="summary-value">{formatCurrency(purchase.grandTotal)}</td>
                      </tr>
                  </tbody>
              </table>
           </div>
+      </div>
+      <div className="grn-v2-signatures">
+        <div>
+            <div className="signature-line"></div>
+            <p>{t('issuer')}</p>
+        </div>
+        <div>
+            <div className="signature-line"></div>
+            <p>{t('approver')}</p>
+        </div>
       </div>
     </div>
   );
