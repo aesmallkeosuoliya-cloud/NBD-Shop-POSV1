@@ -52,7 +52,11 @@ const ProductsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>(() => ((sessionStorage.getItem('productsPageStatusFilter') as 'all' | 'active' | 'inactive') || 'all'));
   const [sortConfig, setSortConfig] = useState<{ key: keyof Product | 'supplierName' | null; direction: 'ascending' | 'descending' }>({ key: 'name', direction: 'ascending' });
 
-  const isSalesRole = currentUser?.role === 'sales';
+  // --- ROLE MANAGEMENT TEMPORARILY DISABLED FOR TESTING ---
+  // This is set to false to grant full product management UI access to all roles.
+  // To re-enable, restore the original line.
+  const isSalesRole = false;
+  // const isSalesRole = currentUser?.role === 'sales';
   const currencySymbol = useMemo(() => (language === 'lo' ? t('currencyKip') : t('currencyBaht')), [language, t]);
 
   const formatCurrency = useCallback((value: number | null | undefined) => {

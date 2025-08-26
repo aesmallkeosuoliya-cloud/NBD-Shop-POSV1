@@ -1,4 +1,5 @@
 
+
 import React, { createContext, useState, useContext, useEffect, ReactNode, useCallback } from 'react';
 import { AppUser, AuthContextType, UserRole } from '../types';
 import { onAuthStateChangedListener, signIn, signOut } from '../services/authService';
@@ -55,11 +56,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
   
   const hasPermission = useCallback((allowedRoles: UserRole[]): boolean => {
+    // --- ROLE MANAGEMENT TEMPORARILY DISABLED FOR TESTING ---
+    // This check is bypassed to grant all permissions to any logged-in user.
+    // To re-enable, restore the original logic.
+    if (!currentUser) return false; // Still require a user to be logged in.
+    return true;
+    /*
+    // ORIGINAL LOGIC:
     if (!currentUser) return false;
     if (allowedRoles.includes(currentUser.role)) {
         return true;
     }
     return false;
+    */
   }, [currentUser]);
 
   const value = {

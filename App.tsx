@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 const { HashRouter, Routes, Route, useLocation, Navigate, Outlet } = ReactRouterDOM;
@@ -106,7 +107,12 @@ const MainLayout: React.FC = () => {
 const PermissionRoute: React.FC<{ allowedRoles: any[] }> = ({ allowedRoles }) => {
     const { hasPermission, loading } = useAuth();
     if (loading) return null; // Or a loading spinner
-    return hasPermission(allowedRoles) ? <Outlet /> : <Navigate to="/" replace />;
+    
+    // --- ROLE MANAGEMENT TEMPORARILY DISABLED FOR TESTING ---
+    // The check is bypassed to allow all logged-in users to access all routes.
+    // To re-enable, uncomment the original line and remove `return <Outlet />`.
+    return <Outlet />;
+    // return hasPermission(allowedRoles) ? <Outlet /> : <Navigate to="/" replace />;
 };
 
 
