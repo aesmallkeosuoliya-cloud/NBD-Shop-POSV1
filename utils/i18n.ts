@@ -1,5 +1,3 @@
-
-
 import { Language, Translations } from '../types';
 
 const translations: Record<Language, Translations> = {
@@ -356,7 +354,7 @@ const translations: Record<Language, Translations> = {
     // Barcode Print Page v2
     barcodeV2_pageTitle: 'ສ້າງ ແລະ ພິມບາໂຄດ',
     barcodeV2_addProduct: 'ເພີ່ມສິນຄ້າ',
-    barcodeV2_selectProductTitle: 'ເລືອກສິນຄ້າ',
+    barcodeV2_selectProductTitle: 'ເລືอกສິນຄ້າ',
     barcodeV2_searchPlaceholder: 'ຄົ້ນຫາສິນຄ້າ...',
     barcodeV2_printQueue: 'ລາຍການພິມ',
     barcodeV2_preview: 'ຕົວຢ່າງ',
@@ -629,7 +627,7 @@ const translations: Record<Language, Translations> = {
     promotionType_free_product: 'ສິນຄ້າແຖມຟຣີ',
     quantityToBuy: 'ຈຳນວນຊື້ (ຊິ້ນ)',
     quantityToGetFree: 'ຈຳນວນແຖມ (ຊິ້ນ)',
-    selectFreeProduct: 'ເລືອກສິນຄ້າແຖມ',
+    selectFreeProduct: 'ເລືอกສິນຄ້າແຖມ',
     freeGiftLabel: 'ແຖມຟຣີ',
     sellingExpenseForPromo: 'ຕົ້ນທຶນສິນຄ້າແຖມ (ໂປຣໂມຊັນ)',
     sellingExpenseForPromoDesc: 'ຕົ້ນທຶນສິນຄ້າແຖມຈາກບິນເລກທີ່ {receiptNumber}',
@@ -650,7 +648,7 @@ const translations: Record<Language, Translations> = {
     poGrandTotalLabel: 'ລວມທັງໝົດ (ຍອດສັ່ງຊື້)',
     savePOButton: 'ບັນທຶກໃບສັ່ງຊື້',
     clearPOFormButton: 'ລ້າງຂໍ້ມູນໃນຟອມ',
-    poHistoryPageTitle: 'ປະຫວັດໃບສັ່ງຊື້ (PO)',
+    poHistoryPageTitle: 'ປະຫວัดໃບສັ່ງຊື້ (PO)',
     poTableItemCount: 'ຈຳນວນລາຍການ',
     poTableStatus: 'ສະຖານະ PO',
     statusPendingPO: 'ລໍຖ້າດຳເນີນການ',
@@ -691,7 +689,7 @@ const translations: Record<Language, Translations> = {
     actionCancelPay: 'ຍົກເລີກການຊຳລະ',
     actionEditPrice: 'ແກ້ໄຂລາຄາ',
     printReport: 'ພິມລາຍງານ',
-    purchaseBillTitle: 'ໃບຊື້ສິນຄ້າ / Buy',
+    purchaseBillTitle: 'ใบซื้อสินค้า / Buy',
     creditTerm: 'ເຄດິດ',
     table_no: 'ລ.ດ',
     table_barcode: 'ບາໂຄດ',
@@ -707,6 +705,8 @@ const translations: Record<Language, Translations> = {
     approver: 'ຜູ້ອະນຸມັດ',
     kip: 'ກີບ',
     att: 'ອັດ',
+    costPricePerUnitLAK: 'ລາຄາທຶນ/ໜ່ວຍ (LAK)',
+    totalLAK: 'ຍອດລວມ (LAK)',
 // @google/genai-api-fix: Removed duplicate `recordPayment` key. This key is already defined for the Credit Tracking context.
     payDate: 'ວັນທີຊຳລະ',
     payAmount: 'ຈຳນວນເງິນ',

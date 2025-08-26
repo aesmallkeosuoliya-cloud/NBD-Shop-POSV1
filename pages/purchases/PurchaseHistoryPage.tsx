@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import { Purchase, PurchaseItemDetail, PurchasePaidStatus, Supplier, Product, PurchasePayment, StoreSettings } from '../../types';
@@ -8,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { getPurchases, getSuppliers, isFirebaseInitialized, softDeletePurchase, recordPurchasePayment, getPurchasePayments, cancelPurchasePayment, getStoreSettings, getProducts } from '../../services/firebaseService';
+import { getPurchases, getSuppliers, isFirebaseInitialized, softDeletePurchase, recordPurchasePayment, getPurchasePayments, cancelPurchasePayment, getStoreSettings } from '../../services/firebaseService';
 import Input from '../../components/common/Input';
 import Card from '../../components/common/Card';
 import { UI_COLORS, PURCHASE_PAYMENT_METHODS_OPTIONS, DEFAULT_STORE_SETTINGS } from '../../constants';
@@ -27,8 +25,6 @@ export const PurchaseHistoryPage: React.FC = () => {
   
   const [allPurchases, setAllPurchases] = useState<Purchase[]>([]);
   const [filteredPurchases, setFilteredPurchases] = useState<Purchase[]>([]);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [storeSettings, setStoreSettings] = useState<StoreSettings>(DEFAULT_STORE_SETTINGS);
   
   const [isLoading, setIsLoading] = useState(true);
@@ -61,15 +57,11 @@ export const PurchaseHistoryPage: React.FC = () => {
   const fetchData = useCallback(async () => {
     if (!isFirebaseInitialized()) return;
     try {
-      const [fetchedPurchases, fetchedSuppliers, fetchedSettings, fetchedProducts] = await Promise.all([
+      const [fetchedPurchases, fetchedSettings] = await Promise.all([
         getPurchases(), 
-        getSuppliers(),
         getStoreSettings(),
-        getProducts()
       ]);
       setAllPurchases(fetchedPurchases.filter(p => !p.isDeleted));
-      setSuppliers(fetchedSuppliers);
-      setAllProducts(fetchedProducts);
       setStoreSettings(fetchedSettings || DEFAULT_STORE_SETTINGS);
     } catch (error) {
       console.error("Error fetching purchase history:", error);
@@ -178,8 +170,6 @@ export const PurchaseHistoryPage: React.FC = () => {
       <PrintableGRN
         purchase={selectedPurchase}
         settings={storeSettings}
-        suppliers={suppliers}
-        products={allProducts}
         t={t}
         formatCurrency={formatCurrency}
         formatDate={(iso) => new Date(iso).toLocaleDateString(localeForFormatting)}
@@ -411,148 +401,72 @@ const PayModal: React.FC<{purchase: Purchase, onClose: () => void, onSuccess: ()
 const PrintableGRN: React.FC<{
   purchase: Purchase;
   settings: StoreSettings;
-  suppliers: Supplier[];
-  products: Product[];
   t: (key: string, replacements?: Record<string, string>) => string;
   formatCurrency: (value: number) => string;
   formatDate: (isoDate: string) => string;
-}> = ({ purchase, settings, suppliers, products, t, formatCurrency, formatDate }) => {
+}> = ({ purchase, settings, t, formatCurrency, formatDate }) => {
     
-    const numberToLaoWords = (num: number): string => {
-        if (typeof num !== 'number') return '';
-    
-        const laoNumbers = ['ສູນ', 'ໜຶ່ງ', 'ສອງ', 'ສາມ', 'ສີ່', 'ຫ້າ', 'ຫົກ', 'ເຈັດ', 'ແປດ', 'ເກົ້າ'];
-        const laoPlaceholders = ['', 'ສິບ', 'ຮ້ອຍ', 'ພັນ', 'ໝື່ນ', 'ແສນ', 'ລ້ານ'];
-    
-        const toWords = (n: number): string => {
-            if (n === 0) return '';
-            let word = '';
-            const numStr = n.toString();
-            const len = numStr.length;
-            for (let i = 0; i < len; i++) {
-                let digit = parseInt(numStr[i]);
-                let pos = len - 1 - i;
-                if (digit === 0) continue;
-                
-                if (pos === 1) { // Tens
-                    if (digit === 1) word += 'ສິບ';
-                    else if (digit === 2) word += 'ຊາວ';
-                    else word += laoNumbers[digit] + 'ສິບ';
-                } else if (pos === 0) { // Units
-                     if (len > 1 && numStr[len - 2] !== '0' && digit === 1) word += 'ເອັດ';
-                     else word += laoNumbers[digit];
-                } else { // Others (hundreds, thousands...)
-                    word += laoNumbers[digit] + laoPlaceholders[pos];
-                }
-            }
-            return word;
-        };
-    
-        const kipPart = Math.floor(num);
-        const attPart = Math.round((num - kipPart) * 100);
-    
-        const kipWords = toWords(kipPart);
-        const attWords = toWords(attPart);
-    
-        let result = '';
-        if (kipPart > 0) result += `${kipWords}${t('kip')}`;
-        if (attPart > 0) {
-            if (result !== '') result += ' ';
-            result += `${attWords}${t('att')}`;
-        }
-        if (result === '') return `${laoNumbers[0]} ${t('kip')}`;
-        return result;
-    };
-
-
-    const supplier = suppliers.find(s => s.id === purchase.supplierId);
-    const productMap = useMemo(() => new Map(products.map(p => [p.id, p])), [products]);
-    const discount = (purchase.subtotal + purchase.taxAmount) - purchase.grandTotal;
-
     return (
-    <div className="grn-v2-container">
-      <header className="grn-v2-header">
-        <div className="grn-v2-header-left">
+    <div className="grn-simple-container">
+      <header className="grn-simple-header">
+        <div className="grn-simple-header-left">
             <p className="store-name">{settings.storeName}</p>
+            <p>{settings.address}</p>
+            <p>{t('phoneLabel')}: {settings.phone}</p>
         </div>
-        <div className="grn-v2-header-right">
-             <p className="title">{t('purchaseBillTitle')}</p>
+        <div className="grn-simple-header-right">
+             <h1>{t('purchases')}</h1>
+             <p><strong>{t('docNo')}:</strong> {purchase.docNo || purchase.id.slice(-6)}</p>
+             <p><strong>{t('purchaseDate')}:</strong> {formatDate(purchase.purchaseDate)}</p>
+             <p><strong>{t('poDocNo')}:</strong> {purchase.purchaseOrderNumber || '-'}</p>
         </div>
       </header>
       
-      <div className="grn-v2-info-grid">
-          <div className="supplier-info">
-            <p><strong>{t('supplierName')}:</strong> {purchase.supplierName || t('unknown')}</p>
-            <p><strong>{t('address')}:</strong> {supplier?.taxInfo || '-'}</p>
-            <p><strong>{t('phone')}:</strong> {supplier?.phone || '-'}</p>
-          </div>
-          <div className="doc-info">
-             <div className="doc-info-item"><span>{t('docNo')}:</span><span>{purchase.docNo || purchase.id.slice(-6)}</span></div>
-             <div className="doc-info-item"><span>{t('invoiceNo')}:</span><span>{purchase.invoiceNo || purchase.purchaseOrderNumber || '-'}</span></div>
-             <div className="doc-info-item"><span>{t('date')}:</span><span>{formatDate(purchase.purchaseDate)}</span></div>
-             <div className="doc-info-item"><span>{t('creditTerm')}:</span><span>{purchase.creditDays || 0} {t('days')}</span></div>
-          </div>
+      <div className="grn-simple-supplier-info">
+        <strong>{t('supplier')}:</strong> {purchase.supplierName || t('unknown')}
       </div>
       
-      <table className="grn-v2-items-table">
+      <table className="grn-simple-items-table">
         <thead>
           <tr>
-            <th>{t('table_no')}</th>
-            <th>{t('table_barcode')}</th>
-            <th>{t('itemsList')}</th>
-            <th style={{ textAlign: 'right' }}>{t('quantity')}</th>
-            <th>{t('table_unit')}</th>
-            <th style={{ textAlign: 'right' }}>{t('table_unit_price')}</th>
-            <th style={{ textAlign: 'right' }}>{t('totalPrice')}</th>
+            <th>#</th>
+            <th>{t('productName')}</th>
+            <th className="text-right">{t('quantity')}</th>
+            <th className="text-right">{t('costPricePerUnitLAK')}</th>
+            <th className="text-right">{t('totalAmountLAK')}</th>
           </tr>
         </thead>
         <tbody>
-          {purchase.items.map((item, index) => {
-            const product = productMap.get(item.productId);
-            return (
+          {purchase.items.map((item, index) => (
             <tr key={item.productId + index}>
               <td>{index + 1}</td>
-              <td>{product?.barcode || '-'}</td>
               <td>{item.productName}</td>
-              <td style={{ textAlign: 'right' }}>{item.quantity}</td>
-              <td>{product?.unit || '-'}</td>
-              <td style={{ textAlign: 'right' }}>{formatCurrency(item.buyPrice)}</td>
-              <td style={{ textAlign: 'right' }}>{formatCurrency(item.buyPrice * item.quantity)}</td>
+              <td className="text-right">{item.quantity}</td>
+              <td className="text-right">{formatCurrency(item.buyPrice)}</td>
+              <td className="text-right">{formatCurrency(item.buyPrice * item.quantity)}</td>
             </tr>
-          )})}
+          ))}
         </tbody>
       </table>
       
-       <div className="grn-v2-footer">
-          <div className="grn-v2-footer-left">
-            <div className="amount-in-words">
-                {`(${numberToLaoWords(purchase.grandTotal)})`}
-            </div>
-            <div className="notes">
-                <strong>{t('notes')}:</strong>
-                <p style={{ margin: 0 }}>{purchase.notes || '-'}</p>
-            </div>
+       <div className="grn-simple-footer">
+          <div className="grn-simple-footer-notes">
+            <strong>{t('notes')}:</strong>
+            <p style={{ margin: 0 }}>{purchase.notes || '-'}</p>
           </div>
-          <div className="grn-v2-footer-right">
-             <table className="grn-v2-summary-table">
+          <div className="grn-simple-footer-summary">
+             <table className="grn-simple-summary-table">
                  <tbody>
-                     <tr><td className="summary-label">{t('totalAmountAll')}:</td><td className="summary-value">{formatCurrency(purchase.subtotal)}</td></tr>
-                     {discount > 0 && <tr><td className="summary-label">{t('endOfBillDiscount')}:</td><td className="summary-value">{formatCurrency(discount)}</td></tr>}
-                     {purchase.taxAmount > 0 && <tr><td className="summary-label">{t('taxAmount')}:</td><td className="summary-value">{formatCurrency(purchase.taxAmount)}</td></tr>}
-                     <tr className="grand-total"><td className="summary-label">{t('grandTotalNet')}:</td><td className="summary-value">{formatCurrency(purchase.grandTotal)}</td></tr>
+                     <tr>
+                        <td className="summary-label">{t('subtotal')}:</td>
+                        <td className="summary-value">{formatCurrency(purchase.subtotal)}</td>
+                     </tr>
+                     <tr className="grand-total">
+                        <td className="summary-label">{t('grandTotal')}:</td>
+                        <td className="summary-value">{formatCurrency(purchase.grandTotal)}</td>
+                     </tr>
                  </tbody>
              </table>
-          </div>
-      </div>
-      
-      <div className="grn-v2-signatures">
-          <div className="signature-box">
-              <div className="signature-line"></div>
-              <span>({t('issuer')})</span>
-          </div>
-          <div className="signature-box">
-              <div className="signature-line"></div>
-              <span>({t('approver')})</span>
           </div>
       </div>
     </div>
