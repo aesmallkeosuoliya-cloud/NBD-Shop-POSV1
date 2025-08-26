@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Product } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -40,8 +41,8 @@ const POProductSelectionModal: React.FC<POProductSelectionModalProps> = ({
     if (searchTerm) {
       const lower = searchTerm.toLowerCase();
       products = products.filter(p =>
-        p.name.toLowerCase().includes(lower) ||
-        p.id.toLowerCase().includes(lower) ||
+        (p.name || '').toLowerCase().includes(lower) ||
+        (p.id || '').toLowerCase().includes(lower) ||
         p.barcode?.toLowerCase().includes(lower)
       );
     }

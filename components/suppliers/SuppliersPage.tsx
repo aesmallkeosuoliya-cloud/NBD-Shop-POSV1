@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Supplier } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -103,7 +104,7 @@ const SuppliersPage: React.FC = () => {
   };
   
   const filteredSuppliers = suppliers.filter(s => 
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (s.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (s.phone && s.phone.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (s.taxId && s.taxId.toLowerCase().includes(searchTerm.toLowerCase()))
   );

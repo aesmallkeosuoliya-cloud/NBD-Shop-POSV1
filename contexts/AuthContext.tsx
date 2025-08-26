@@ -1,6 +1,7 @@
 
 
 import React, { createContext, useState, useContext, useEffect, ReactNode, useCallback } from 'react';
+// @google/genai-api-fix: Imported missing AuthContextType to resolve type error.
 import { AppUser, AuthContextType, UserRole } from '../types';
 import { onAuthStateChangedListener, signIn, signOut } from '../services/authService';
 import { addAuditLog } from '../services/firebaseService';

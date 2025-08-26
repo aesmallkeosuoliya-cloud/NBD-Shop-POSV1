@@ -6,7 +6,8 @@ const { HashRouter, Routes, Route, useLocation, Navigate, Outlet } = ReactRouter
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 import DashboardPage from './components/dashboard/DashboardPage';
-import ProductsPage from './components/products/ProductsPage';
+// @google/genai-api-fix: Changed to a named import to resolve the missing default export error.
+import { ProductsPage } from './components/products/ProductsPage';
 import ImportFromExcelPage from './components/products/ImportFromExcelPage';
 import ProductEditFromExcelPage from './components/products/ProductEditFromExcelPage'; // New
 import BarcodePrintPage from './components/products/BarcodePrintPage';
@@ -23,7 +24,8 @@ import CustomersPage from './components/customers/CustomersPage'; // New Custome
 import StoreSettingsPage from './components/settings/StoreSettingsPage'; // New Store Settings Page
 import ExchangeRatePage from './components/settings/ExchangeRatePage'; // NEW Exchange Rate Page
 import ResetDataPage from './components/settings/ResetDataPage'; // NEW Reset Data Page
-import UserManagementPage from './components/settings/UserManagementPage'; // NEW User Management Page
+// @google/genai-api-fix: Changed to named import to resolve the "no default export" error.
+import { UserManagementPage } from './components/settings/UserManagementPage'; // NEW User Management Page
 import ProfitLossPage from './components/reports/ProfitLossPage'; // New Profit & Loss Page
 import StockMovementReportPage from './components/reports/StockMovementReportPage'; // New Stock Movement Report Page
 import AccountsPayableAgingReportPage from './components/reports/AccountsPayableAgingReportPage'; // New AP Aging Report

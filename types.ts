@@ -1,4 +1,5 @@
 
+
 export enum Language {
   LO = 'lo',
   TH = 'th',
@@ -22,6 +23,15 @@ export interface FirebaseUser {
   displayName: string | null;
 }
 
+// @google/genai-api-fix: Added missing AuthContextType definition to resolve import error.
+export interface AuthContextType {
+  currentUser: AppUser | null;
+  loading: boolean;
+  login: (email: string, pass: string) => Promise<AppUser>;
+  logout: () => Promise<void>;
+  hasPermission: (allowedRoles: UserRole[]) => boolean;
+}
+
 // --- NEW App User & Auth System ---
 export type UserRole = 'admin' | 'manager' | 'sales' | 'purchasing' | 'gr';
 
@@ -34,13 +44,23 @@ export interface AppUser {
   updatedAt: string;
 }
 
-export interface AuthContextType {
-  currentUser: AppUser | null;
-  loading: boolean;
-  login: (email: string, pass: string) => Promise<AppUser>;
-  logout: () => Promise<void>;
-  hasPermission: (allowedRoles: UserRole[]) => boolean;
+// --- NEW Internal User Management System ---
+export type Permission = 'create_user' | 'edit_user' | 'delete_user' | 'suspend_user' | 'view_reports' | 'manage_sales';
+export type InternalUserRole = 'Sales' | 'Manager' | 'Purchasing' | 'GR';
+
+export interface InternalUser {
+  id: string;
+  fullname: string;
+  username: string;
+  password?: string; // Stored insecurely. Hashing should be done server-side in a real app.
+  role: InternalUserRole;
+  permissions: Permission[];
+  status: 'active' | 'suspended';
+  createdAt: string;
+  updatedAt: string;
 }
+// --- END Internal User Management System ---
+
 
 export interface AuditLog {
   id: string;

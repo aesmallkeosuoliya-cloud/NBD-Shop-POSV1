@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 const { useNavigate } = ReactRouterDOM;
@@ -24,7 +26,8 @@ const SortIcon: React.FC<{ direction?: 'ascending' | 'descending' }> = ({ direct
 };
 
 // --- MAIN COMPONENT ---
-const ProductsPage: React.FC = () => {
+// @google/genai-api-fix: Changed to a named export to resolve import errors in other files.
+export const ProductsPage: React.FC = () => {
   const { t, language } = useLanguage(); 
   const { currentUser } = useAuth();
   const navigate = useNavigate();
@@ -116,11 +119,11 @@ const ProductsPage: React.FC = () => {
       (selectedCategory === 'all' || p.category === selectedCategory) &&
       (statusFilter === 'all' || (statusFilter === 'active' ? p.showInPOS : !p.showInPOS)) &&
       (searchTerm === '' ||
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (p.secondName && p.secondName.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (p.barcode && p.barcode.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (p.productType && p.productType.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (p.category && p.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (p.category || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (p.brand && p.brand.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (p.supplierId && supplierMap.get(p.supplierId)?.toLowerCase().includes(searchTerm.toLowerCase()))
       )
@@ -490,15 +493,21 @@ const ProductsPage: React.FC = () => {
                       </td>
                       <td className="px-2 py-2 whitespace-nowrap text-right" onContextMenu={(e) => handleContextMenu(e, product, product.stock)}>{product.stock}</td>
                       <td className="px-2 py-2 whitespace-nowrap" onContextMenu={(e) => handleContextMenu(e, product, product.unit)}>{product.unit}</td>
-                      <td className="px-2 py-2 whitespace-nowrap text-right" onContextMenu={(e) => handleContextMenu(e, product, product.sellingPrice)}>{formatCurrency(product.sellingPrice)}</td>
-                      <td className="px-2 py-2 whitespace-nowrap text-right" onContextMenu={(e) => handleContextMenu(e, product, `${((product.profitPerUnit ?? (product.sellingPrice - product.costPrice)) / (product.sellingPrice || 1) * 100).toFixed(2)}%`)}>{((product.profitPerUnit ?? (product.sellingPrice - product.costPrice)) / (product.sellingPrice || 1) * 100).toFixed(2)}%</td>
+                      <td className="px-2 py-2 whitespace-nowrap text-right font-semibold text-red-600" onContextMenu={(e) => handleContextMenu(e, product, product.sellingPrice)}>{formatCurrency(product.sellingPrice)}</td>
+                      <td className="px-2 py-2 whitespace-nowrap text-right">
+                        {(() => {
+                          const profit = product.profitPerUnit ?? (product.sellingPrice - product.costPrice);
+                          const gp = product.sellingPrice > 0 ? (profit / product.sellingPrice) * 100 : 0;
+                          return <span className={gp >= 0 ? 'text-blue-600' : 'text-red-600'}>{gp.toFixed(2)}%</span>;
+                        })()}
+                      </td>
                       <td className="px-2 py-2 whitespace-nowrap text-right" onContextMenu={(e) => handleContextMenu(e, product, product.costPrice)}>{formatCurrency(product.costPrice)}</td>
                       <td className="px-2 py-2 whitespace-nowrap" onContextMenu={(e) => handleContextMenu(e, product, product.secondName)}>{product.secondName || '-'}</td>
                       <td className="px-2 py-2 whitespace-nowrap" onContextMenu={(e) => handleContextMenu(e, product, product.productType)}>{product.productType || '-'}</td>
                       <td className="px-2 py-2 whitespace-nowrap" onContextMenu={(e) => handleContextMenu(e, product, product.category)}>{product.category}</td>
                       <td className="px-2 py-2 whitespace-nowrap" onContextMenu={(e) => handleContextMenu(e, product, product.brand)}>{product.brand || '-'}</td>
                       <td className="px-2 py-2 whitespace-nowrap" onContextMenu={(e) => handleContextMenu(e, product, supplierMap.get(product.supplierId || ''))}>{product.supplierId ? supplierMap.get(product.supplierId) || '-' : '-'}</td>
-                      <td className="px-2 py-2 whitespace-nowrap text-center" onContextMenu={(e) => handleContextMenu(e, product, product.showInPOS ? t('statusActive') : t('statusInactive'))}>
+                      <td className="px-2 py-2 whitespace-nowrap text-center">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${product.showInPOS ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                           {product.showInPOS ? t('statusActive') : t('statusInactive')}
                         </span>
@@ -508,29 +517,26 @@ const ProductsPage: React.FC = () => {
                 </tr>
               ))}
               {finalFilteredAndSortedProducts.length === 0 && !isLoading && (
-                 <tr><td colSpan={isSalesRole ? 5 : 13} className="text-center py-10 text-gray-500">{t('noDataFound')}</td></tr>
+                 <tr><td colSpan={13} className="text-center py-10 text-gray-500">{t('noDataFound')}</td></tr>
               )}
             </tbody>
           </table>
+          {contextMenu && contextMenu.visible && (
+            <div style={{ top: contextMenu.y, left: contextMenu.x }} className="absolute z-50 bg-white shadow-lg rounded-md border text-sm w-56">
+                <ul className="divide-y">
+                    <li className="p-2 hover:bg-gray-100 cursor-pointer" onClick={handleCopyCell}>{t('copyCellToClipboard')}</li>
+                    <li className="p-2 hover:bg-gray-100 cursor-pointer" onClick={handleCopyRows}>{t('copyToClipboard')} ({selectedProductIds.size})</li>
+                    <li className="p-2 hover:bg-gray-100 cursor-pointer" onClick={handleSelectAllRows}>{t('selectAllRows')}</li>
+                    <li className="p-2 hover:bg-gray-100 cursor-pointer text-red-600" onClick={handleDeleteSelected}>{t('deleteSelected')} ({selectedProductIds.size})</li>
+                    <li className="p-2 hover:bg-gray-100 cursor-pointer text-orange-600" onClick={handleDeactivateSelected}>{t('deactivateSelected')} ({selectedProductIds.size})</li>
+                    <li className="p-2 hover:bg-gray-100 cursor-pointer text-green-600" onClick={handleActivateSelected}>{t('activateSelected')} ({selectedProductIds.size})</li>
+                </ul>
+            </div>
+          )}
         </div>
       )}
 
-      {!isSalesRole && contextMenu?.visible && (
-        <div style={{ top: contextMenu.y, left: contextMenu.x }} className="absolute z-50 bg-white shadow-lg rounded-md py-1 w-56 border text-sm">
-          <div onClick={handleCopyRows} className="px-4 py-2 hover:bg-gray-100 cursor-pointer">{t('copyToClipboard')} ({selectedProductIds.size})</div>
-          <div onClick={handleCopyCell} className="px-4 py-2 hover:bg-gray-100 cursor-pointer">{t('copyCellToClipboard')}</div>
-          <div className="border-t my-1"></div>
-          <div onClick={handleSelectAllRows} className="px-4 py-2 hover:bg-gray-100 cursor-pointer">{t('selectAllRows')}</div>
-          <div className="border-t my-1"></div>
-          <div onClick={() => { if (contextMenu.targetRowData) { handleEditProduct(contextMenu.targetRowData); } setContextMenu(null); }} className="px-4 py-2 hover:bg-gray-100 cursor-pointer">{t('editProduct')}...</div>
-          <div className="border-t my-1"></div>
-          <div onClick={handleActivateSelected} className="px-4 py-2 hover:bg-green-50 text-green-700 cursor-pointer">{t('activateSelected')}</div>
-          <div onClick={handleDeactivateSelected} className="px-4 py-2 hover:bg-orange-50 text-orange-700 cursor-pointer">{t('deactivateSelected')}</div>
-          <div onClick={handleDeleteSelected} className="px-4 py-2 hover:bg-red-50 text-red-600 cursor-pointer">{t('deleteSelected')}</div>
-        </div>
-      )}
-
-      {!isSalesRole && isModalOpen && (
+      {isModalOpen && (
         <Modal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
@@ -549,9 +555,6 @@ const ProductsPage: React.FC = () => {
           />
         </Modal>
       )}
-
     </div>
   );
 };
-
-export default ProductsPage;

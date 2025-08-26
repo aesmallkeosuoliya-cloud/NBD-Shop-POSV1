@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Customer } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -103,7 +104,7 @@ const CustomersPage: React.FC = () => {
   };
 
   const filteredCustomers = useMemo(() => customers.filter(c =>
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (c.phone && c.phone.includes(searchTerm)) ||
     (c.email && c.email.toLowerCase().includes(searchTerm.toLowerCase()))
   ), [customers, searchTerm]);

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useMemo, ChangeEvent, useRef } from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import { Product, CartItem, Sale, SaleTransactionItem, Customer, StoreSettings, Language, Promotion, ExchangeRates } from '../../types';

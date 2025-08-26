@@ -122,6 +122,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
         items: [
             { path: '/settings/store', labelKey: 'storeSettingsPageTitle', icon: <SettingsIcon /> },
             { path: '/settings/exchange-rate', labelKey: 'exchangeRateSettings', icon: <ExchangeRateIcon /> },
+            { path: '/settings/users', labelKey: 'userManagement', icon: <UsersIcon /> },
             { path: '/settings/reset-data', labelKey: 'resetData', icon: <ResetIcon /> },
         ]
     }

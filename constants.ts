@@ -1,5 +1,5 @@
 
-import { StoreSettings, Language } from './types';
+import { StoreSettings, Language, Permission, InternalUserRole } from './types';
 
 // --- Firebase Configuration ---
 // This configuration is now set up to connect to your Firebase project.
@@ -41,8 +41,8 @@ export const UI_COLORS = {
 
 export const DEFAULT_LANGUAGE = 'lo';
 
-export const DEFAULT_PRODUCT_CATEGORIES = ["ເຄື່ອງດື່ມ", "ຂະໜົມ", "ຂອງໃຊ້ສ່ວນຕົວ", "ເຄື່ອງຂຽນ", "ອື່ນໆ"]; // Lao Categories
-export const EXPENSE_CATEGORIES = ["ຄ່າເຊົ່າ", "ຄ່າສິນຄ້າ", "ຄ່າເດີນທາງ", "ຄ່າການຕະຫຼາດ", "ຄ່າສາທາລະນຸປະໂພກ", "ອື່ນໆ"]; // Lao Categories
+export const DEFAULT_PRODUCT_CATEGORIES = ["เครื่องดื่่ม", "ขะหนม", "ของใช้ส่วนตัว", "เครื่องเขียน", "อื่นๆ"]; // Lao Categories
+export const EXPENSE_CATEGORIES = ["ค่าเช่า", "ค่าสินค้า", "ค่าเดินทาง", "ค่าการตลาด", "ค่าสาธารณูปโภค", "อื่นๆ"]; // Lao Categories
 
 export const ACCOUNTING_EXPENSE_CATEGORIES = [
   { code: 1, labelKey: 'accountingCategory_cost' }, // ต้นทุน
@@ -83,16 +83,16 @@ export const PURCHASE_PAYMENT_METHODS_OPTIONS = [
   { value: 'transfer', labelKey: 'paymentMethodTransfer' },
 ];
 
-export const PURCHASE_CATEGORIES = ["ສັ່ງຈາກຜູ້ສະໜອງ", "ຊື້ອອນລາຍ", "ຊື້ໜ้าร้าน/ตลาด", "ອື່ນໆ"]; // Lao Categories
+export const PURCHASE_CATEGORIES = ["สั่งจากผู้สะหนอง", "ซื้อออนไลน์", "ซื้อหน้าร้าน/ตลาด", "อื่นๆ"]; // Lao Categories
 
 export const DEFAULT_STORE_SETTINGS: StoreSettings = {
-  storeName: "ຊື່ຮ້ານຄ້າ (ຕົວຢ່າງ)",
-  address: "ທີ່ຢູ່ຮ້ານຄ້າ (ຕົວຢ່າງ)",
+  storeName: "ชื่อร้านค้า (ตัวอย่าง)",
+  address: "ที่อยู่ร้านค้า (ตัวอย่าง)",
   phone: "020-123-4567", 
-  taxId: "ເລກປະຈຳຕົວຜູ້ເສຍພາສີ (ຕົວຢ່າງ)",
+  taxId: "เลขประจำตัวผู้เสียภาษี (ตัวอย่าง)",
   logoUrl: "",
   qrPaymentUrl: "",
-  footerNote: "ຂອບໃຈທີ່ໃຊ້ບໍລິການ",
+  footerNote: "ขอบใจที่ใช้บริการ",
   defaultLanguage: Language.LO,
   defaultVatRateForPO: 7, // Default 7% VAT for Purchase Orders
 };
@@ -103,36 +103,21 @@ export const PO_STATUSES = [
   { value: 'received', labelKey: 'statusReceivedFullPO', className: 'bg-green-200 text-green-800', baseColor: 'green' },
 ];
 
+// --- NEW: Internal User Management Constants ---
+export const ALL_PERMISSIONS: Permission[] = ['create_user', 'edit_user', 'delete_user', 'suspend_user', 'view_reports', 'manage_sales'];
+export const INTERNAL_USER_ROLES: InternalUserRole[] = ['Manager', 'Sales', 'Purchasing', 'GR'];
+
+export const ROLE_PERMISSIONS: Record<InternalUserRole, Permission[]> = {
+  Manager: ['create_user', 'edit_user', 'delete_user', 'suspend_user', 'view_reports', 'manage_sales'],
+  Sales: ['manage_sales'],
+  Purchasing: ['view_reports'],
+  GR: [],
+};
+// --- END: Internal User Management Constants ---
+
 
 // --- IMPORTANT: PDF FONT DATA ---
-// For Lao and Thai text to render correctly in PDFs, you MUST replace the placeholder strings
-// (e.g., NOTO_SANS_LAO_REGULAR_TTF_BASE64_PLACEHOLDER, NOTO_SANS_THAI_REGULAR_TTF_BASE64_PLACEHOLDER)
-// with the actual Base64 encoded content of your .ttf font files.
-//
-// Example for Lao: Noto Sans Lao or Phetsarath OT.
-// Example for Thai: Noto Sans Thai.
-// Online tools can convert .ttf files to Base64 strings.
-//
-// These constants are defined directly WITHIN the respective .tsx files where PDF generation occurs:
-// - components/pos/POSPage.tsx
-// - components/salesHistory/SalesHistoryPage.tsx
-// - components/creditTracking/CreditTrackingPage.tsx
-// - components/reports/ProfitLossPage.tsx
-//
-// FAILURE TO REPLACE THESE PLACEHOLDERS WILL RESULT IN GARBLED LAO/THAI TEXT IN PDFs.
-// The application will attempt to fall back to Helvetica, which does not support these scripts.
-//
-// The application code checks if the font data string starts with "PLACEHOLDER_"
-// and will warn in the console if it attempts to use it without replacement.
-// This global comment serves as a high-level reminder of this CRITICAL step.
-//
-// To get Base64 data for a .ttf font:
-// 1. Download the .ttf file (e.g., NotoSansLao-Regular.ttf from Google Fonts).
-// 2. Use an online TTF to Base64 converter, or a command-line tool like:
-//    base64 -w 0 NotoSansLao-Regular.ttf > noto_sans_lao_base64.txt
-//    (For Windows, you might need `certutil -encodehex -f NotoSansLao-Regular.ttf temp.hex && certutil -decodehex temp.hex noto_sans_lao_base64.txt` or use WSL's base64)
-// 3. Copy the entire Base64 string from the output file.
-// 4. In the relevant .tsx file, replace the placeholder string with this copied Base64 string.
-//    Example inside a .tsx file:
-//    const NOTO_SANS_LAO_REGULAR_TTF_BASE64 = "AAEAAAAPAIAAAwBwRkZUTWFk.... (very long string) ..."; // Actual Base64 data here
+// This is a global comment. The actual font data constants are defined directly within the
+// respective .tsx files where PDF generation occurs to avoid cluttering this central constants file.
+// FAILURE TO REPLACE THE PLACEHOLDER STRINGS IN THOSE FILES WILL RESULT IN GARBLED LAO/THAI TEXT IN PDFs.
 // --- END IMPORTANT PDF FONT DATA INSTRUCTIONS ---

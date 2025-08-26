@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import { Product, ProductMovementLog, ProductMovementLogType, StoreSettings } from '../../types';
@@ -113,8 +114,8 @@ const StockMovementReportPage: React.FC = () => {
     // Memoized filtered product list for selection
     const filteredProductList = useMemo(() => {
         return allProducts.filter(p => {
-            const nameMatch = productNameFilter ? p.name.toLowerCase().includes(productNameFilter.toLowerCase()) : true;
-            const codeMatch = productCodeFilter ? p.id.toLowerCase().includes(productCodeFilter.toLowerCase()) : true;
+            const nameMatch = productNameFilter ? (p.name || '').toLowerCase().includes(productNameFilter.toLowerCase()) : true;
+            const codeMatch = productCodeFilter ? (p.id || '').toLowerCase().includes(productCodeFilter.toLowerCase()) : true;
             const categoryMatch = categoryFilter !== 'all' ? p.category === categoryFilter : true;
             return nameMatch && codeMatch && categoryMatch;
         });

@@ -73,7 +73,7 @@ const PurchaseOrderHistoryPage: React.FC = () => {
   useEffect(() => {
     let result = allPOs;
     if (filterPoNumber) {
-      result = result.filter(po => po.poNumber.toLowerCase().includes(filterPoNumber.toLowerCase()));
+      result = result.filter(po => (po.poNumber || '').toLowerCase().includes(filterPoNumber.toLowerCase()));
     }
     if (filterSupplier) {
       result = result.filter(po => po.supplierName?.toLowerCase().includes(filterSupplier.toLowerCase()));

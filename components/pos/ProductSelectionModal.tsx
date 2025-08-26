@@ -44,15 +44,15 @@ const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
     const baseProducts = allProducts.filter(p => p.showInPOS && p.stock > 0);
 
     if (!searchTerm) {
-      return baseProducts.sort((a,b) => a.name.localeCompare(b.name));
+      return baseProducts.sort((a,b) => (a.name || '').localeCompare(b.name || ''));
     }
     const lowerSearchTerm = searchTerm.toLowerCase();
     return baseProducts.filter(
       (p) =>
-        (p.name.toLowerCase().includes(lowerSearchTerm) ||
-          p.id.toLowerCase().includes(lowerSearchTerm) || // Search by Product ID
+        ((p.name || '').toLowerCase().includes(lowerSearchTerm) ||
+          (p.id || '').toLowerCase().includes(lowerSearchTerm) || // Search by Product ID
           (p.barcode && p.barcode.toLowerCase().includes(lowerSearchTerm)))
-    ).sort((a,b) => a.name.localeCompare(b.name));
+    ).sort((a,b) => (a.name || '').localeCompare(b.name || ''));
   }, [searchTerm, allProducts]);
 
   useEffect(() => {

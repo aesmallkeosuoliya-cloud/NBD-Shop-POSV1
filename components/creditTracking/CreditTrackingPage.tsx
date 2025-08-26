@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Sale, Customer, CreditCustomerSummary, CreditInvoiceStatus, StoreSettings, Language } from '../../types';
@@ -152,9 +153,9 @@ export const CreditTrackingPage: React.FC = () => {
     if (searchTerm) {
       const lowerSearch = searchTerm.toLowerCase();
       filtered = filtered.filter(s => 
-        s.customerName.toLowerCase().includes(lowerSearch) ||
+        (s.customerName || '').toLowerCase().includes(lowerSearch) ||
         (s.customerPhone && s.customerPhone.includes(lowerSearch)) ||
-        s.customerId.toLowerCase().includes(lowerSearch)
+        (s.customerId || '').toLowerCase().includes(lowerSearch)
       );
     }
 
