@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { InternalUser, InternalUserRole, Permission } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -45,7 +44,8 @@ const InternalUserForm: React.FC<InternalUserFormProps> = ({ initialData, onSubm
 
   // Effect to update permissions when role changes
   useEffect(() => {
-    if (user.role) {
+    // @google/genai-api-fix: Add a guard to ensure user.role is a valid key in ROLE_PERMISSIONS before spreading.
+    if (user.role && ROLE_PERMISSIONS[user.role]) {
       setUser(prev => ({
         ...prev,
         permissions: [...ROLE_PERMISSIONS[user.role!]]
