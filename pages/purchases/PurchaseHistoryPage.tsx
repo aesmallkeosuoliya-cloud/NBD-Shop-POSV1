@@ -8,7 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { getPurchases, getSuppliers, isFirebaseInitialized, softDeletePurchase, recordPurchasePayment, getPurchasePayments, cancelPurchasePayment, getStoreSettings } from '../../services/firebaseService';
+import { getPurchases, getSuppliers, isFirebaseInitialized, softDeletePurchase, recordPurchasePayment, getPurchasePayments, cancelPurchasePayment, getStoreSettings, getProducts } from '../../services/firebaseService';
 import Input from '../../components/common/Input';
 import Card from '../../components/common/Card';
 import { UI_COLORS, PURCHASE_PAYMENT_METHODS_OPTIONS, DEFAULT_STORE_SETTINGS } from '../../constants';
@@ -28,6 +28,7 @@ export const PurchaseHistoryPage: React.FC = () => {
   const [allPurchases, setAllPurchases] = useState<Purchase[]>([]);
   const [filteredPurchases, setFilteredPurchases] = useState<Purchase[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [storeSettings, setStoreSettings] = useState<StoreSettings>(DEFAULT_STORE_SETTINGS);
   
   const [isLoading, setIsLoading] = useState(true);
@@ -60,13 +61,15 @@ export const PurchaseHistoryPage: React.FC = () => {
   const fetchData = useCallback(async () => {
     if (!isFirebaseInitialized()) return;
     try {
-      const [fetchedPurchases, fetchedSuppliers, fetchedSettings] = await Promise.all([
+      const [fetchedPurchases, fetchedSuppliers, fetchedSettings, fetchedProducts] = await Promise.all([
         getPurchases(), 
         getSuppliers(),
-        getStoreSettings()
+        getStoreSettings(),
+        getProducts()
       ]);
       setAllPurchases(fetchedPurchases.filter(p => !p.isDeleted));
       setSuppliers(fetchedSuppliers);
+      setAllProducts(fetchedProducts);
       setStoreSettings(fetchedSettings || DEFAULT_STORE_SETTINGS);
     } catch (error) {
       console.error("Error fetching purchase history:", error);
@@ -175,6 +178,8 @@ export const PurchaseHistoryPage: React.FC = () => {
       <PrintableGRN
         purchase={selectedPurchase}
         settings={storeSettings}
+        suppliers={suppliers}
+        products={allProducts}
         t={t}
         formatCurrency={formatCurrency}
         formatDate={(iso) => new Date(iso).toLocaleDateString(localeForFormatting)}
@@ -406,65 +411,150 @@ const PayModal: React.FC<{purchase: Purchase, onClose: () => void, onSuccess: ()
 const PrintableGRN: React.FC<{
   purchase: Purchase;
   settings: StoreSettings;
+  suppliers: Supplier[];
+  products: Product[];
   t: (key: string, replacements?: Record<string, string>) => string;
   formatCurrency: (value: number) => string;
   formatDate: (isoDate: string) => string;
-}> = ({ purchase, settings, t, formatCurrency, formatDate }) => {
-  return (
-    <div className="grn-print-container">
-      <header className="grn-print-header">
-        <div className="store-info">
-          <h2 style={{ fontSize: '14pt', fontWeight: 'bold', marginBottom: '5px' }}>{settings.storeName}</h2>
-          <p style={{ margin: 0 }}>{settings.address}</p>
-          <p style={{ margin: 0 }}>{t('phone')}: {settings.phone}</p>
+}> = ({ purchase, settings, suppliers, products, t, formatCurrency, formatDate }) => {
+    
+    const numberToLaoWords = (num: number): string => {
+        if (typeof num !== 'number') return '';
+    
+        const laoNumbers = ['ສູນ', 'ໜຶ່ງ', 'ສອງ', 'ສາມ', 'ສີ່', 'ຫ້າ', 'ຫົກ', 'ເຈັດ', 'ແປດ', 'ເກົ້າ'];
+        const laoPlaceholders = ['', 'ສິບ', 'ຮ້ອຍ', 'ພັນ', 'ໝື່ນ', 'ແສນ', 'ລ້ານ'];
+    
+        const toWords = (n: number): string => {
+            if (n === 0) return '';
+            let word = '';
+            const numStr = n.toString();
+            const len = numStr.length;
+            for (let i = 0; i < len; i++) {
+                let digit = parseInt(numStr[i]);
+                let pos = len - 1 - i;
+                if (digit === 0) continue;
+                
+                if (pos === 1) { // Tens
+                    if (digit === 1) word += 'ສິບ';
+                    else if (digit === 2) word += 'ຊາວ';
+                    else word += laoNumbers[digit] + 'ສິບ';
+                } else if (pos === 0) { // Units
+                     if (len > 1 && numStr[len - 2] !== '0' && digit === 1) word += 'ເອັດ';
+                     else word += laoNumbers[digit];
+                } else { // Others (hundreds, thousands...)
+                    word += laoNumbers[digit] + laoPlaceholders[pos];
+                }
+            }
+            return word;
+        };
+    
+        const kipPart = Math.floor(num);
+        const attPart = Math.round((num - kipPart) * 100);
+    
+        const kipWords = toWords(kipPart);
+        const attWords = toWords(attPart);
+    
+        let result = '';
+        if (kipPart > 0) result += `${kipWords}${t('kip')}`;
+        if (attPart > 0) {
+            if (result !== '') result += ' ';
+            result += `${attWords}${t('att')}`;
+        }
+        if (result === '') return `${laoNumbers[0]} ${t('kip')}`;
+        return result;
+    };
+
+
+    const supplier = suppliers.find(s => s.id === purchase.supplierId);
+    const productMap = useMemo(() => new Map(products.map(p => [p.id, p])), [products]);
+    const discount = (purchase.subtotal + purchase.taxAmount) - purchase.grandTotal;
+
+    return (
+    <div className="grn-v2-container">
+      <header className="grn-v2-header">
+        <div className="grn-v2-header-left">
+            <p className="store-name">{settings.storeName}</p>
         </div>
-        <div className="grn-info" style={{ textAlign: 'right' }}>
-          <h1>{t('purchases')}</h1>
-          <p style={{ margin: 0 }}><strong>{t('docNo')}:</strong> {purchase.docNo || purchase.id.slice(-8)}</p>
-          <p style={{ margin: 0 }}><strong>{t('purchaseDate')}:</strong> {formatDate(purchase.purchaseDate)}</p>
-          {purchase.invoiceNo && <p style={{ margin: 0 }}><strong>{t('invoiceNo')}:</strong> {purchase.invoiceNo}</p>}
-          {purchase.purchaseOrderNumber && <p style={{ margin: 0 }}><strong>{t('poDocNo')}:</strong> {purchase.purchaseOrderNumber}</p>}
+        <div className="grn-v2-header-right">
+             <p className="title">{t('purchaseBillTitle')}</p>
         </div>
       </header>
-      <section className="grn-print-supplier-info">
-        <h3 style={{ margin: '0 0 5px 0', fontWeight: 'bold' }}>{t('supplier')}:</h3>
-        <p style={{ margin: 0 }}><strong>{purchase.supplierName || t('unknown')}</strong></p>
-      </section>
-      <table className="grn-print-items-table">
+      
+      <div className="grn-v2-info-grid">
+          <div className="supplier-info">
+            <p><strong>{t('supplierName')}:</strong> {purchase.supplierName || t('unknown')}</p>
+            <p><strong>{t('address')}:</strong> {supplier?.taxInfo || '-'}</p>
+            <p><strong>{t('phone')}:</strong> {supplier?.phone || '-'}</p>
+          </div>
+          <div className="doc-info">
+             <div className="doc-info-item"><span>{t('docNo')}:</span><span>{purchase.docNo || purchase.id.slice(-6)}</span></div>
+             <div className="doc-info-item"><span>{t('invoiceNo')}:</span><span>{purchase.invoiceNo || purchase.purchaseOrderNumber || '-'}</span></div>
+             <div className="doc-info-item"><span>{t('date')}:</span><span>{formatDate(purchase.purchaseDate)}</span></div>
+             <div className="doc-info-item"><span>{t('creditTerm')}:</span><span>{purchase.creditDays || 0} {t('days')}</span></div>
+          </div>
+      </div>
+      
+      <table className="grn-v2-items-table">
         <thead>
           <tr>
-            <th>#</th>
-            <th>{t('productName')}</th>
+            <th>{t('table_no')}</th>
+            <th>{t('table_barcode')}</th>
+            <th>{t('itemsList')}</th>
             <th style={{ textAlign: 'right' }}>{t('quantity')}</th>
-            <th style={{ textAlign: 'right' }}>{t('buyPrice')} ({purchase.currency})</th>
-            <th style={{ textAlign: 'right' }}>{t('total')} ({purchase.currency})</th>
+            <th>{t('table_unit')}</th>
+            <th style={{ textAlign: 'right' }}>{t('table_unit_price')}</th>
+            <th style={{ textAlign: 'right' }}>{t('totalPrice')}</th>
           </tr>
         </thead>
         <tbody>
-          {purchase.items.map((item, index) => (
+          {purchase.items.map((item, index) => {
+            const product = productMap.get(item.productId);
+            return (
             <tr key={item.productId + index}>
               <td>{index + 1}</td>
+              <td>{product?.barcode || '-'}</td>
               <td>{item.productName}</td>
               <td style={{ textAlign: 'right' }}>{item.quantity}</td>
+              <td>{product?.unit || '-'}</td>
               <td style={{ textAlign: 'right' }}>{formatCurrency(item.buyPrice)}</td>
               <td style={{ textAlign: 'right' }}>{formatCurrency(item.buyPrice * item.quantity)}</td>
             </tr>
-          ))}
+          )})}
         </tbody>
       </table>
-      <table className="grn-print-summary">
-        <tbody>
-          <tr><td>{t('subtotal')}:</td><td style={{ textAlign: 'right' }}>{formatCurrency(purchase.subtotal)}</td></tr>
-          {purchase.taxAmount > 0 && <tr><td>{t('taxAmount')} ({purchase.taxRate}%):</td><td style={{ textAlign: 'right' }}>{formatCurrency(purchase.taxAmount)}</td></tr>}
-          <tr style={{ fontWeight: 'bold', borderTop: '2px solid black' }}><td>{t('grandTotal')}:</td><td style={{ textAlign: 'right' }}>{formatCurrency(purchase.grandTotal)}</td></tr>
-        </tbody>
-      </table>
-      {purchase.notes && (
-        <footer className="grn-print-footer">
-          <strong>{t('notes')}:</strong>
-          <p style={{ margin: '5px 0 0 0' }}>{purchase.notes}</p>
-        </footer>
-      )}
+      
+       <div className="grn-v2-footer">
+          <div className="grn-v2-footer-left">
+            <div className="amount-in-words">
+                {`(${numberToLaoWords(purchase.grandTotal)})`}
+            </div>
+            <div className="notes">
+                <strong>{t('notes')}:</strong>
+                <p style={{ margin: 0 }}>{purchase.notes || '-'}</p>
+            </div>
+          </div>
+          <div className="grn-v2-footer-right">
+             <table className="grn-v2-summary-table">
+                 <tbody>
+                     <tr><td className="summary-label">{t('totalAmountAll')}:</td><td className="summary-value">{formatCurrency(purchase.subtotal)}</td></tr>
+                     {discount > 0 && <tr><td className="summary-label">{t('endOfBillDiscount')}:</td><td className="summary-value">{formatCurrency(discount)}</td></tr>}
+                     {purchase.taxAmount > 0 && <tr><td className="summary-label">{t('taxAmount')}:</td><td className="summary-value">{formatCurrency(purchase.taxAmount)}</td></tr>}
+                     <tr className="grand-total"><td className="summary-label">{t('grandTotalNet')}:</td><td className="summary-value">{formatCurrency(purchase.grandTotal)}</td></tr>
+                 </tbody>
+             </table>
+          </div>
+      </div>
+      
+      <div className="grn-v2-signatures">
+          <div className="signature-box">
+              <div className="signature-line"></div>
+              <span>({t('issuer')})</span>
+          </div>
+          <div className="signature-box">
+              <div className="signature-line"></div>
+              <span>({t('approver')})</span>
+          </div>
+      </div>
     </div>
   );
 };

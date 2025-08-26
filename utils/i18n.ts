@@ -1,4 +1,5 @@
 
+
 import { Language, Translations } from '../types';
 
 const translations: Record<Language, Translations> = {
@@ -690,6 +691,22 @@ const translations: Record<Language, Translations> = {
     actionCancelPay: 'ຍົກເລີກການຊຳລະ',
     actionEditPrice: 'ແກ້ໄຂລາຄາ',
     printReport: 'ພິມລາຍງານ',
+    purchaseBillTitle: 'ໃບຊື້ສິນຄ້າ / Buy',
+    creditTerm: 'ເຄດິດ',
+    table_no: 'ລ.ດ',
+    table_barcode: 'ບາໂຄດ',
+    table_item_desc: 'ລາຍການສິນຄ້າ',
+    table_qty: 'ຈຳນວນ',
+    table_unit: 'ໜ.ໜ່ວຍ',
+    table_unit_price: 'ລາຄາ/ໜ່ວຍ',
+    table_total_price: 'ລາຄາລວມ',
+    totalAmountAll: 'ລວມເງິນທັງໝົດ',
+    endOfBillDiscount: 'ສ່ວນຫຼຸດ',
+    grandTotalNet: 'ລວມເງິນສຸດທິ',
+    issuer: 'ຜູ້ອອກບິນ',
+    approver: 'ຜູ້ອະນຸມັດ',
+    kip: 'ກີບ',
+    att: 'ອັດ',
 // @google/genai-api-fix: Removed duplicate `recordPayment` key. This key is already defined for the Credit Tracking context.
     payDate: 'ວັນທີຊຳລະ',
     payAmount: 'ຈຳນວນເງິນ',
