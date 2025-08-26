@@ -1,16 +1,17 @@
 
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Purchase, PurchaseItemDetail, PurchasePaidStatus, Supplier, Product, PurchasePayment } from '../../types';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { createRoot, Root } from 'react-dom/client';
+import { Purchase, PurchaseItemDetail, PurchasePaidStatus, Supplier, Product, PurchasePayment, StoreSettings } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { getPurchases, getSuppliers, isFirebaseInitialized, softDeletePurchase, recordPurchasePayment, getPurchasePayments, cancelPurchasePayment } from '../../services/firebaseService';
+import { getPurchases, getSuppliers, isFirebaseInitialized, softDeletePurchase, recordPurchasePayment, getPurchasePayments, cancelPurchasePayment, getStoreSettings } from '../../services/firebaseService';
 import Input from '../../components/common/Input';
 import Card from '../../components/common/Card';
-import { UI_COLORS, PURCHASE_PAYMENT_METHODS_OPTIONS } from '../../constants';
+import { UI_COLORS, PURCHASE_PAYMENT_METHODS_OPTIONS, DEFAULT_STORE_SETTINGS } from '../../constants';
 
 declare var Swal: any;
 
@@ -27,9 +28,11 @@ export const PurchaseHistoryPage: React.FC = () => {
   const [allPurchases, setAllPurchases] = useState<Purchase[]>([]);
   const [filteredPurchases, setFilteredPurchases] = useState<Purchase[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [storeSettings, setStoreSettings] = useState<StoreSettings>(DEFAULT_STORE_SETTINGS);
   
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(null);
+  const grnPrintAreaRootRef = useRef<Root | null>(null);
   
   // Filters
   const [filterDateFrom, setFilterDateFrom] = useState('');
@@ -56,11 +59,15 @@ export const PurchaseHistoryPage: React.FC = () => {
 
   const fetchData = useCallback(async () => {
     if (!isFirebaseInitialized()) return;
-    // Don't set isLoading(true) for refreshes, only initial load
     try {
-      const [fetchedPurchases, fetchedSuppliers] = await Promise.all([getPurchases(), getSuppliers()]);
-      setAllPurchases(fetchedPurchases.filter(p => !p.isDeleted)); // Filter out soft-deleted
+      const [fetchedPurchases, fetchedSuppliers, fetchedSettings] = await Promise.all([
+        getPurchases(), 
+        getSuppliers(),
+        getStoreSettings()
+      ]);
+      setAllPurchases(fetchedPurchases.filter(p => !p.isDeleted));
       setSuppliers(fetchedSuppliers);
+      setStoreSettings(fetchedSettings || DEFAULT_STORE_SETTINGS);
     } catch (error) {
       console.error("Error fetching purchase history:", error);
       Swal.fire(t('error'), t('errorOccurred'), 'error');
@@ -96,7 +103,6 @@ export const PurchaseHistoryPage: React.FC = () => {
   }, [selectedPurchaseId, allPurchases]);
 
   useEffect(() => {
-    // When selected purchase changes, default to items tab
     setActiveDetailTab('items');
   }, [selectedPurchaseId]);
 
@@ -116,7 +122,6 @@ export const PurchaseHistoryPage: React.FC = () => {
     return t(key);
   }
 
-  // --- ACTIONS ---
   const handlePayClick = () => {
     if (selectedPurchase && selectedPurchase.paidStatus !== 'paid') {
       setIsPayModalOpen(true);
@@ -147,6 +152,49 @@ export const PurchaseHistoryPage: React.FC = () => {
         setIsLoading(false);
       }
     }
+  };
+
+  const handlePrint = () => {
+    if (!selectedPurchase) {
+      Swal.fire(t('error'), t('select') + ' ' + t('purchases'), 'warning');
+      return;
+    }
+    
+    const printAreaContainer = document.getElementById('grn-print-area-wrapper');
+    if (!printAreaContainer) {
+      console.error("GRN print area wrapper not found in index.html");
+      Swal.fire(t('error'), 'Print container not found.', 'error');
+      return;
+    }
+    
+    if (!grnPrintAreaRootRef.current) {
+        grnPrintAreaRootRef.current = createRoot(printAreaContainer);
+    }
+    
+    grnPrintAreaRootRef.current.render(
+      <PrintableGRN
+        purchase={selectedPurchase}
+        settings={storeSettings}
+        t={t}
+        formatCurrency={formatCurrency}
+        formatDate={(iso) => new Date(iso).toLocaleDateString(localeForFormatting)}
+      />
+    );
+
+    setTimeout(() => {
+        document.body.classList.add('printing-grn');
+        
+        const cleanup = () => {
+            document.body.classList.remove('printing-grn');
+            window.removeEventListener('afterprint', cleanup);
+            if (grnPrintAreaRootRef.current) {
+                grnPrintAreaRootRef.current.render(null);
+            }
+        };
+        window.addEventListener('afterprint', cleanup);
+        
+        window.print();
+    }, 500);
   };
 
 
@@ -214,7 +262,7 @@ export const PurchaseHistoryPage: React.FC = () => {
         <Button size="sm" variant="ghost" disabled={!selectedPurchaseId} leftIcon={<DeleteIcon />} onClick={handleDelete}>{t('delete')}</Button>
         <Button size="sm" variant="ghost" disabled={!selectedPurchaseId || selectedPurchase?.paidStatus === 'paid'} leftIcon={<PayIcon />} onClick={handlePayClick}>{t('actionPay')}</Button>
         <Button size="sm" variant="ghost" disabled={!selectedPurchaseId || !['partial', 'paid'].includes(selectedPurchase?.paidStatus || '')} onClick={() => setActiveDetailTab('payments')}>{t('actionCancelPay')}</Button>
-        <Button size="sm" variant="ghost" disabled={!selectedPurchaseId} leftIcon={<PrintIcon />}>{t('print')}</Button>
+        <Button size="sm" variant="ghost" disabled={!selectedPurchaseId} leftIcon={<PrintIcon />} onClick={handlePrint}>{t('print')}</Button>
         <Button size="sm" variant="ghost" disabled={true}>{t('printReport')}</Button>
       </div>
 
@@ -353,4 +401,70 @@ const PayModal: React.FC<{purchase: Purchase, onClose: () => void, onSuccess: ()
             </form>
         </Modal>
     );
+};
+
+const PrintableGRN: React.FC<{
+  purchase: Purchase;
+  settings: StoreSettings;
+  t: (key: string, replacements?: Record<string, string>) => string;
+  formatCurrency: (value: number) => string;
+  formatDate: (isoDate: string) => string;
+}> = ({ purchase, settings, t, formatCurrency, formatDate }) => {
+  return (
+    <div className="grn-print-container">
+      <header className="grn-print-header">
+        <div className="store-info">
+          <h2 style={{ fontSize: '14pt', fontWeight: 'bold', marginBottom: '5px' }}>{settings.storeName}</h2>
+          <p style={{ margin: 0 }}>{settings.address}</p>
+          <p style={{ margin: 0 }}>{t('phone')}: {settings.phone}</p>
+        </div>
+        <div className="grn-info" style={{ textAlign: 'right' }}>
+          <h1>{t('purchases')}</h1>
+          <p style={{ margin: 0 }}><strong>{t('docNo')}:</strong> {purchase.docNo || purchase.id.slice(-8)}</p>
+          <p style={{ margin: 0 }}><strong>{t('purchaseDate')}:</strong> {formatDate(purchase.purchaseDate)}</p>
+          {purchase.invoiceNo && <p style={{ margin: 0 }}><strong>{t('invoiceNo')}:</strong> {purchase.invoiceNo}</p>}
+          {purchase.purchaseOrderNumber && <p style={{ margin: 0 }}><strong>{t('poDocNo')}:</strong> {purchase.purchaseOrderNumber}</p>}
+        </div>
+      </header>
+      <section className="grn-print-supplier-info">
+        <h3 style={{ margin: '0 0 5px 0', fontWeight: 'bold' }}>{t('supplier')}:</h3>
+        <p style={{ margin: 0 }}><strong>{purchase.supplierName || t('unknown')}</strong></p>
+      </section>
+      <table className="grn-print-items-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>{t('productName')}</th>
+            <th style={{ textAlign: 'right' }}>{t('quantity')}</th>
+            <th style={{ textAlign: 'right' }}>{t('buyPrice')} ({purchase.currency})</th>
+            <th style={{ textAlign: 'right' }}>{t('total')} ({purchase.currency})</th>
+          </tr>
+        </thead>
+        <tbody>
+          {purchase.items.map((item, index) => (
+            <tr key={item.productId + index}>
+              <td>{index + 1}</td>
+              <td>{item.productName}</td>
+              <td style={{ textAlign: 'right' }}>{item.quantity}</td>
+              <td style={{ textAlign: 'right' }}>{formatCurrency(item.buyPrice)}</td>
+              <td style={{ textAlign: 'right' }}>{formatCurrency(item.buyPrice * item.quantity)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <table className="grn-print-summary">
+        <tbody>
+          <tr><td>{t('subtotal')}:</td><td style={{ textAlign: 'right' }}>{formatCurrency(purchase.subtotal)}</td></tr>
+          {purchase.taxAmount > 0 && <tr><td>{t('taxAmount')} ({purchase.taxRate}%):</td><td style={{ textAlign: 'right' }}>{formatCurrency(purchase.taxAmount)}</td></tr>}
+          <tr style={{ fontWeight: 'bold', borderTop: '2px solid black' }}><td>{t('grandTotal')}:</td><td style={{ textAlign: 'right' }}>{formatCurrency(purchase.grandTotal)}</td></tr>
+        </tbody>
+      </table>
+      {purchase.notes && (
+        <footer className="grn-print-footer">
+          <strong>{t('notes')}:</strong>
+          <p style={{ margin: '5px 0 0 0' }}>{purchase.notes}</p>
+        </footer>
+      )}
+    </div>
+  );
 };

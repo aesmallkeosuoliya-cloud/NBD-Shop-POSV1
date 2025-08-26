@@ -690,7 +690,7 @@ const translations: Record<Language, Translations> = {
     actionCancelPay: 'ຍົກເລີກການຊຳລະ',
     actionEditPrice: 'ແກ້ໄຂລາຄາ',
     printReport: 'ພິມລາຍງານ',
-    recordPayment: 'ບັນທຶກການຊຳລະເງິນ',
+// @google/genai-api-fix: Removed duplicate `recordPayment` key. This key is already defined for the Credit Tracking context.
     payDate: 'ວັນທີຊຳລະ',
     payAmount: 'ຈຳນວນເງິນ',
     paymentHistory: 'ປະຫວັດການຊຳລະເງິນ',
@@ -892,7 +892,6 @@ const translations: Record<Language, Translations> = {
     cashFlowFromOperations: 'ກະແສເງິນສົດຈາກກິດຈະກຳດຳເນີນງານ',
     netIncome: 'ກຳໄລສຸດທິ',
     adjustments: 'ລາຍການປັບປຸງ',
-// @google/genai-api-fix: Corrected a syntax error in the translations object by completing the property and adding a comma.
     increaseInAccountsReceivable: 'ລູກໜີ້ການຄ້າເພີ່ມຂຶ້ນ',
   },
   th: {

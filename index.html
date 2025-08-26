@@ -16,7 +16,8 @@
     "@google/genai": "https://esm.sh/@google/genai@^1.15.0",
     "path": "https://esm.sh/path@^0.12.7",
     "vite": "https://esm.sh/vite@^7.1.3",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.0.1"
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.0.1",
+    "react-dom/client": "https://esm.sh/react-dom@^19.1.0/client"
   }
 }
 </script>
@@ -54,7 +55,8 @@
     
     /* Hide print areas on screen by default */
     #barcode-print-area-wrapper, 
-    #po-print-area-wrapper, 
+    #po-print-area-wrapper,
+    #grn-print-area-wrapper,
     #stock-movement-print-area-wrapper, 
     #receipt-print-area-wrapper,
     #ap-print-area-wrapper {
@@ -118,6 +120,20 @@
     .po-print-summary td { padding: 4px; }
     .po-print-footer { margin-top: 30px; padding-top: 10px; border-top: 1px solid #ccc; font-size: 9pt; }
 
+    /* GRN Print Styles */
+    .grn-print-container { color: #000; background: #fff; font-size: 10pt; }
+    .grn-print-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
+    .grn-print-header h1 { font-size: 20pt; font-weight: bold; margin: 0; }
+    .grn-print-header .store-info, .grn-print-header .grn-info { font-size: 9pt; line-height: 1.4; }
+    .grn-print-supplier-info { border: 1px solid #ccc; padding: 10px; margin-bottom: 15px; border-radius: 5px; }
+    .grn-print-items-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 9pt; }
+    .grn-print-items-table th, .grn-print-items-table td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+    .grn-print-items-table th { background-color: #f2f2f2; }
+    .grn-print-summary { width: 50%; margin-left: auto; font-size: 11pt; }
+    .grn-print-summary td { padding: 4px; }
+    .grn-print-footer { margin-top: 30px; padding-top: 10px; border-top: 1px solid #ccc; font-size: 9pt; }
+
+
     /* Stock Movement Report Print Styles */
     .stock-movement-print-container { color: #000; background: #fff; font-size: 10pt; padding: 5mm; }
     .stock-movement-print-header { border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 8px; }
@@ -171,6 +187,7 @@
       /* When printing, the root app should be hidden if a specific print area is shown */
       body.printing-barcodes #root,
       body.printing-po #root,
+      body.printing-grn #root,
       body.printing-stock-movement #root,
       body.printing-receipt #root,
       body.printing-ap-report #root {
@@ -182,6 +199,7 @@
          the targeted print wrapper becomes the ONLY visible element on the page. */
       body.printing-barcodes #barcode-print-area-wrapper,
       body.printing-po #po-print-area-wrapper,
+      body.printing-grn #grn-print-area-wrapper,
       body.printing-stock-movement #stock-movement-print-area-wrapper,
       body.printing-receipt #receipt-print-area-wrapper,
       body.printing-ap-report #ap-print-area-wrapper {
@@ -200,6 +218,7 @@
   <div id="root" class="no-print"></div>
   <div id="barcode-print-area-wrapper"></div>
   <div id="po-print-area-wrapper"></div>
+  <div id="grn-print-area-wrapper"></div>
   <div id="stock-movement-print-area-wrapper"></div>
   <div id="receipt-print-area-wrapper"></div>
   <div id="ap-print-area-wrapper"></div>
